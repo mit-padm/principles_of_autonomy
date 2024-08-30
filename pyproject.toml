@@ -5,7 +5,11 @@ description = "A package for tooling related to 16.410 Principles of Autonomy at
 authors = [
     {name = "Ethan Fahnestock", email = "ekf@mit.edu"},
 ]
-dependencies = []
+dependencies = [
+    "gradescope-utils>=0.5.0",
+    "timeout-decorator>=0.5.0",
+    "numpy>=2.1.0",
+]
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
