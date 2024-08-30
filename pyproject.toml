@@ -1,0 +1,19 @@
+[project]
+name = "principles_of_autonomy"
+version = "0.1.0"
+description = "A package for tooling related to 16.410 Principles of Autonomy at MIT"
+authors = [
+    {name = "Ethan Fahnestock", email = "ekf@mit.edu"},
+]
+dependencies = []
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
