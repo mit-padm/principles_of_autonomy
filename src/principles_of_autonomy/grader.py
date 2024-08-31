@@ -124,7 +124,7 @@ class Grader:
         sys.path.insert(0,str(testing_dir))
         notebook_locals = run_path(testing_dir / goofy_name)
         sys.path.pop(0)
-        shutil.rmtree(str(testing_dir / goofy_name))
+        shutil.rmtree(str(testing_dir))
         return notebook_locals
 
     @staticmethod
