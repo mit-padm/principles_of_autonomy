@@ -95,6 +95,11 @@ class Grader:
         ipynb = json.load(open(notebook_ipynb))
 
         for cell in ipynb["cells"]:
+            # make sure cells are lists. Sometimes they end up being a string with all lines in them
+            if type(cell['source']) is str:
+                # split into lines
+                cell['source'] = cell['source'].splitlines(keepends=True)
+
             # erase test cells, this is optional and useful for debugging
             # to avoid recursions when developing
             if any("## TEST ##" in line for line in cell["source"]):
