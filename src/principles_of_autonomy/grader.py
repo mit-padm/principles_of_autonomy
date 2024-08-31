@@ -121,13 +121,13 @@ class Grader:
             shutil.rmtree(str(testing_dir))
         # copy over files
         shutil.copytree("/autograder/submission/", str(testing_dir))
-        goofy_name = "WHO_WOULD_SUBMIT_A_FILE_LIKE_THIS_cleaned_notebook.py"
-        if (testing_dir / goofy_name).exists():
-            raise RuntimeError("Someone submitted a file with a really crazy name. L")
-        with open(testing_dir / goofy_name, "w") as fh:
+        student_converted_notebook_name = "student_cleaned_notebook.py"
+        if (testing_dir / student_converted_notebook_name).exists():
+            raise RuntimeError("Someone submitted a file named `student_cleaned_notebook.py`. This conflicts with the autograder. Please resubmit without the conflicting file.")
+        with open(testing_dir / student_converted_notebook_name, "w") as fh:
             fh.write(source)
         sys.path.insert(0,str(testing_dir))
-        notebook_locals = run_path(testing_dir / goofy_name)
+        notebook_locals = run_path(testing_dir / student_converted_notebook_name)
         sys.path.pop(0)
         shutil.rmtree(str(testing_dir))
         return notebook_locals
