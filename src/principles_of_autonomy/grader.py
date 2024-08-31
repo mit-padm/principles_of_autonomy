@@ -2,6 +2,9 @@
 
 import json
 import os
+from pathlib import Path
+import shutil
+import sys
 import unittest
 from runpy import run_path
 
@@ -79,7 +82,7 @@ class Grader:
     @staticmethod
     def locals_from_notebook(notebook_ipynb):
         """Read, run, return locals of notebook"""
-        banned_commands = ["HTML"]
+        banned_commands = ["HTML", "%load_ext", "%autoreload"]
 
         ipynb = json.load(open(notebook_ipynb))
 
@@ -100,13 +103,20 @@ class Grader:
         source, meta = exporter.from_notebook_node(
             nbformat.reads(json.dumps(ipynb), nbformat.NO_CONVERT)
         )
-        # HACK to work-around drake issue #20914
-        source = source.replace("plot_system_graphviz", "#plot_system_graphviz")
-        with open("./cleaned_notebook.py", "w") as fh:
+        testing_dir = Path("/file_testing_dir")
+        if testing_dir.exists():
+            shutil.rmtree(str(testing_dir))
+        # copy over files
+        shutil.copytree("/autograder/submission/", str(testing_dir))
+        goofy_name = "WHO_WOULD_SUBMIT_A_FILE_LIKE_THIS_cleaned_notebook.py"
+        if (testing_dir / goofy_name).exists():
+            raise RuntimeError("Someone submitted a file with a really crazy name. L")
+        with open(testing_dir / goofy_name, "w") as fh:
             fh.write(source)
-
-        notebook_locals = run_path("cleaned_notebook.py")
-        os.system("rm cleaned_notebook.py")
+        sys.path.insert(0,str(testing_dir))
+        notebook_locals = run_path(testing_dir / goofy_name)
+        sys.path.pop(0)
+        shutil.rmtree(str(testing_dir / goofy_name))
         return notebook_locals
 
     @staticmethod
