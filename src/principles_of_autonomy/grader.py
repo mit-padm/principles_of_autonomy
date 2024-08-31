@@ -84,6 +84,14 @@ class Grader:
         """Read, run, return locals of notebook"""
         banned_commands = ["HTML", "%load_ext", "%autoreload"]
 
+        # temporary fix for deepnote weirdness
+        # if you manually set the cwd of the notebook, it places it in a nested folder
+        # waiting to hear back from them on how to address having to set a manual directory
+        nb_path = Path(notebook_ipynb)
+        if not nb_path.exists() and (nb_path.parent / "work" / nb_path.name).exists():
+            notebook_ipynb = nb_path.parent / "work" / nb_path.name
+
+
         ipynb = json.load(open(notebook_ipynb))
 
         for cell in ipynb["cells"]:
