@@ -82,7 +82,7 @@ class Grader:
     @staticmethod
     def locals_from_notebook(notebook_ipynb):
         """Read, run, return locals of notebook"""
-        banned_commands = ["HTML", "%load_ext", "%autoreload"]
+        banned_commands = ["HTML", "%load_ext", "%autoreload", "%timeit"]
 
         # temporary fix for deepnote weirdness
         # if you manually set the cwd of the notebook, it places it in a nested folder
