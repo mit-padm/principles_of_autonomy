@@ -88,3 +88,13 @@ class TestPSet1(unittest.TestCase):
                 print("\n**\n")
         else:
             print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
+
+    @weight(5)
+    @timeout_decorator.timeout(1.0)
+    def test_4_form_word(self):
+        word = get_locals(self.notebook_locals, ['form_confirmation_word'])
+        password_hash = hash("Alpha".lower())
+        if hash(word.strip().lower()) == password_hash:
+            return
+        else:
+            raise RuntimeError(f"Incorrect form word {word}")
