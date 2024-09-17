@@ -100,8 +100,8 @@ class Grader:
         nb_path = Path(notebook_ipynb)
         if not nb_path.exists() and (nb_path.parent / "work" / nb_path.name).exists():
             notebook_ipynb = nb_path.parent / "work" / nb_path.name
-        else:
-            raise RuntimeError(f"No notebook found: {nb_path.name}. Make sure the notebook is in the submitted files and not in an odd directory (should be root or in /work)")
+        if not Path(notebook_ipynb).exists():
+            raise RuntimeError(f"No notebook found: {Path(notebook_ipynb).name}. Make sure the notebook is in the submitted files and not in an odd directory (should be root or in /work)")
 
 
         ipynb = json.load(open(notebook_ipynb))
