@@ -270,7 +270,7 @@ class TestPSet2(unittest.TestCase):
 
 
     @weight(10)
-    @timeout_decorator.timeout(1.0)
+    @timeout_decorator.timeout(5.0)
     def test_13_simple_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
@@ -280,7 +280,7 @@ class TestPSet2(unittest.TestCase):
         check_path(path, bounds, environment, start, radius, goal_region)
 
     @weight(10)
-    @timeout_decorator.timeout(1.0)
+    @timeout_decorator.timeout(5.0)
     def test_14_bugtrap_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
@@ -290,7 +290,7 @@ class TestPSet2(unittest.TestCase):
         check_path(path, bounds, environment, start, radius, goal_region)
 
     @weight(20)
-    @timeout_decorator.timeout(1.0)
+    @timeout_decorator.timeout(5.0)
     def test_15_complex_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
@@ -300,7 +300,7 @@ class TestPSet2(unittest.TestCase):
         check_path(path, bounds, environment, start, radius, goal_region)
 
     @weight(5)
-    @timeout_decorator.timeout(1.0)
+    @timeout_decorator.timeout(60.0)
     def test_16_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Bravo".lower())

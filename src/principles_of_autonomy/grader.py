@@ -5,12 +5,13 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import re
 import unittest
 from runpy import run_path
 
 import nbformat
 from gradescope_utils.autograder_utils.json_test_runner import JSONTestRunner
-from nbconvert import PythonExporter
+from nbconvert import PythonExporter, preprocessors
 
 grader_throws = False
 
@@ -18,6 +19,15 @@ def set_grader_throws(val):
     global grader_throws
     grader_throws = val
 
+class RemoveMagicCommands(preprocessors.Preprocessor):
+    def preprocess_cell(self, cell, resources, index):
+        if cell.cell_type == 'code':
+            # Remove lines that start with % or %%
+            cell.source = "\n".join(
+                line for line in cell.source.splitlines()
+                if not re.match(r"^\s*%{1,2}", line)
+            )
+        return cell, resources
 
 def get_locals(nb_locals, names: list) -> list:
     """
@@ -82,7 +92,7 @@ class Grader:
     @staticmethod
     def locals_from_notebook(notebook_ipynb):
         """Read, run, return locals of notebook"""
-        banned_commands = ["HTML", "%load_ext", "%autoreload", "%timeit"]
+        banned_commands = ["HTML"]
 
         # temporary fix for deepnote weirdness
         # if you manually set the cwd of the notebook, it places it in a nested folder
@@ -90,15 +100,8 @@ class Grader:
         nb_path = Path(notebook_ipynb)
         if not nb_path.exists() and (nb_path.parent / "work" / nb_path.name).exists():
             notebook_ipynb = nb_path.parent / "work" / nb_path.name
-        elif not nb_path.exists():
-            # if notebook is not at expected path, or in work directory, see if we can find it otherwise
-            notebook_options = list(nb_path.parent.rglob(nb_path.name))
-            if len(notebook_options) == 1:
-                notebook_ipynb = next(notebook_options)
-            elif len(notebook_options) > 1:
-                raise RuntimeError(f"Multiple notebooks named {nb_path.name} found in submitted files. Only one may be present.")
-            else:
-                raise RuntimeError(f"No notebooks named {nb_path.name} found in submitted files.")
+        else:
+            raise RuntimeError(f"No notebook found: {nb_path.name}. Make sure the notebook is in the submitted files and not in an odd directory (should be root or in /work)")
 
 
         ipynb = json.load(open(notebook_ipynb))
@@ -122,6 +125,7 @@ class Grader:
                 ]
 
         exporter = PythonExporter()
+        exporter.register_preprocessor(RemoveMagicCommands, enabled=True)
         source, meta = exporter.from_notebook_node(
             nbformat.reads(json.dumps(ipynb), nbformat.NO_CONVERT)
         )
@@ -136,7 +140,10 @@ class Grader:
         with open(testing_dir / student_converted_notebook_name, "w") as fh:
             fh.write(source)
         sys.path.insert(0,str(testing_dir))
+        cwd = os.getcwd()
+        os.chdir(testing_dir)
         notebook_locals = run_path(testing_dir / student_converted_notebook_name)
+        os.chdir(cwd)
         sys.path.pop(0)
         shutil.rmtree(str(testing_dir))
         return notebook_locals
