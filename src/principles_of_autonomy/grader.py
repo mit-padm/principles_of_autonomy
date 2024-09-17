@@ -90,6 +90,15 @@ class Grader:
         nb_path = Path(notebook_ipynb)
         if not nb_path.exists() and (nb_path.parent / "work" / nb_path.name).exists():
             notebook_ipynb = nb_path.parent / "work" / nb_path.name
+        elif not nb_path.exists():
+            # if notebook is not at expected path, or in work directory, see if we can find it otherwise
+            notebook_options = list(nb_path.parent.rglob(nb_path.name))
+            if len(notebook_options) == 1:
+                notebook_ipynb = next(notebook_options)
+            elif len(notebook_options) > 1:
+                raise RuntimeError(f"Multiple notebooks named {nb_path.name} found in submitted files. Only one may be present.")
+            else:
+                raise RuntimeError(f"No notebooks named {nb_path.name} found in submitted files.")
 
 
         ipynb = json.load(open(notebook_ipynb))
