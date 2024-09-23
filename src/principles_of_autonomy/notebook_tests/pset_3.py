@@ -175,8 +175,8 @@ class TestPSet3(unittest.TestCase):
     @weight(20)
     @timeout_decorator.timeout(5.0)
     def test_3_expectimax(self):
-        fmax, fmin, game_state, tic_tac_toe_board = get_locals(
-            self.notebook_locals, ["expectimax_maximize_score", "expectimax_minimize_score", "game_state", "tic_tac_toe_board"])
+        fmax, fexpected, game_state, tic_tac_toe_board = get_locals(
+            self.notebook_locals, ["maximize_score_expectimax", "expected_score_expectimax", "game_state", "tic_tac_toe_board"])
         test_state = game_state(tic_tac_toe_board(
             ['x', 'o', 'x', 'x', 'x', 'o', 'o', ' ', 'o']))
         result = fmax(test_state)
@@ -220,7 +220,7 @@ class TestPSet3(unittest.TestCase):
         test_state = game_state(tic_tac_toe_board(
             ['x', 'o', 'x', 'x', 'x', 'o', 'o', ' ', 'o']))
         test_state.player = 2
-        result = fmin(test_state)
+        result = fexpected(test_state)
         assert isinstance(result, tuple) and len(
             result) == 3, "Result should be a 3-tuple"
         assert result[0] == - \
@@ -236,7 +236,7 @@ class TestPSet3(unittest.TestCase):
         test_state = game_state(tic_tac_toe_board(
             ['o', 'x', 'o', 'o', ' ', 'x', 'x', ' ', 'x']))
         test_state.player = 2
-        result = fmin(test_state)
+        result = fexpected(test_state)
         assert result[0] == 0.5, "From ['o','x','o','o',' ','x','x',' ','x'] min score should be 0.5."
         assert result[1] == 5, "From ['o','x','o','o',' ','x','x',' ','x'] number of explored states should be 5."
         assert len(
