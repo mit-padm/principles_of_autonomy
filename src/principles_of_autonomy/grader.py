@@ -28,6 +28,14 @@ class RemoveMagicCommands(preprocessors.Preprocessor):
                 if not re.match(r"^\s*%{1,2}", line)
             )
         return cell, resources
+ 
+class RemoveRawCells(preprocessors.Preprocessor):
+    # raw cells don't error if run in notebook, but error when copied to py file
+    def preprocess_cell(self, cell, resources, index):
+        if cell.cell_type == 'raw':
+            # remove all contents
+            cell.source = ""
+        return cell, resources
 
 def get_locals(nb_locals, names: list) -> list:
     """
@@ -126,6 +134,7 @@ class Grader:
 
         exporter = PythonExporter()
         exporter.register_preprocessor(RemoveMagicCommands, enabled=True)
+        exporter.register_preprocessor(RemoveRawCells, enabled=True)
         source, meta = exporter.from_notebook_node(
             nbformat.reads(json.dumps(ipynb), nbformat.NO_CONVERT)
         )
