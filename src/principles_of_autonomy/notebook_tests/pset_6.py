@@ -26,118 +26,105 @@ class TestPSet6(unittest.TestCase):
 
     @weight(5)
     def test_1(self):
-        q1_answer = get_locals(
-            self.notebook_locals, ["q1_answer"])
-        # Assert that the computed values match the expected values
-        assert q1_answer == (1, 2, 4, 5, 7), "Incorrect values."
+        q1_answer = get_locals(self.notebook_locals, ["q1_answer"])
+        answer = (1, 2, 4, 5, 7)
+        assert q1_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_2(self):
-        q2_answer = get_locals(
-            self.notebook_locals, ["q2_answer"])
-        # Assert that the computed values match the expected values
-        assert q2_answer == (1, 3, 6), "Incorrect values."
+        q2_answer = get_locals(self.notebook_locals, ["q2_answer"])
+        answer = (1, 3, 6)
+        assert q2_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_3(self):
-        q3_answer = get_locals(
-            self.notebook_locals, ["q3_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q3_answer - .8) < 1e-3, "Incorrect values."
+        q3_answer = get_locals(self.notebook_locals, ["q3_answer"])
+        answer = 0.8
+        assert abs(q3_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_4(self):
-        q4_answer = get_locals(
-            self.notebook_locals, ["q4_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q4_answer - .875) < 1e-3, "Incorrect values."
+        q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
+        answer = 0.875
+        assert abs(q4_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_5(self):
-        q5_answer = get_locals(
-            self.notebook_locals, ["q5_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q5_answer - .76) < 1e-3, "Incorrect values."
+        q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
+        answer = 0.76
+        assert abs(q5_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_6(self):
-        q6_answer = get_locals(
-            self.notebook_locals, ["q6_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q6_answer - .613) < 1e-3, "Incorrect values."
+        q6_answer = get_locals(self.notebook_locals, ["q6_answer"])
+        answer = 0.613
+        assert abs(q6_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_7(self):
-        q7_answer = get_locals(
-            self.notebook_locals, ["q7_answer"])
-        # Assert that the computed values match the expected values
-        assert q7_answer == 8, "Incorrect values."
+        q7_answer = get_locals(self.notebook_locals, ["q7_answer"])
+        answer = 8
+        assert q7_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_8(self):
-        q8_answer = get_locals(
-            self.notebook_locals, ["q8_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q8_answer - .0005) < 1e-3, "Incorrect values."
+        q8_answer = get_locals(self.notebook_locals, ["q8_answer"])
+        answer = 0.0005
+        assert abs(q8_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_9(self):
-        q9_answer = get_locals(
-            self.notebook_locals, ["q9_answer"])
-        # Assert that the computed values match the expected values
-        assert abs(q9_answer - .07781) < 1e-3, "Incorrect values."
+        q9_answer = get_locals(self.notebook_locals, ["q9_answer"])
+        answer = 0.07781
+        assert abs(q9_answer - answer) < 1e-3, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_10(self):
-        q10_answer = get_locals(
-            self.notebook_locals, ["q10_answer"])
-        # Assert that the computed values match the expected values
-        assert q10_answer == (0, 0.1, 0, 1), "Incorrect values."
+        q10_answer = get_locals(self.notebook_locals, ["q10_answer"])
+        answer = (0, 0.1, 0, 1)
+        assert q10_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_11(self):
-        q11_answer = get_locals(
-            self.notebook_locals, ["q11_answer"])
-        # Assert that the computed values match the expected values
-        assert q11_answer == (0.1, 1), "Incorrect values."
+        q11_answer = get_locals(self.notebook_locals, ["q11_answer"])
+        answer = (0.1, 1)
+        assert q11_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_12(self):
-        q12_answer = get_locals(
-            self.notebook_locals, ["q12_answer"])
-        # Assert that the computed values match the expected values
-        assert q12_answer == 4, "Incorrect values."
+        q12_answer = get_locals(self.notebook_locals, ["q12_answer"])
+        answer = 4
+        assert q12_answer == answer, "Incorrect values."
 
         test_ok()
 
     @weight(5)
     def test_13(self):
-        q13_answer = get_locals(
-            self.notebook_locals, ["q13_answer"])
-        # Assert that the computed values match the expected values
-        assert q13_answer == 3, "Incorrect values."
+        q13_answer = get_locals(self.notebook_locals, ["q13_answer"])
+        answer = 3
+        assert q13_answer == answer, "Incorrect values."
 
         test_ok()
 
