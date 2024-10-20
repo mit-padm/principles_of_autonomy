@@ -223,7 +223,7 @@ class TestPSet7(unittest.TestCase):
     @timeout_decorator.timeout(1.0)
     def test_19_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("Finland".lower()) #to change!!
+        password_hash = hash("Greece".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
             return
         else:
