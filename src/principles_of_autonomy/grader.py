@@ -9,6 +9,7 @@ import re
 import unittest
 from runpy import run_path
 
+from collections.abc import Iterable
 import nbformat
 from gradescope_utils.autograder_utils.json_test_runner import JSONTestRunner
 from nbconvert import PythonExporter, preprocessors
@@ -51,8 +52,17 @@ def get_locals(nb_locals, names: list) -> list:
         return out[0]
     return out
 
-
-
+def compare_iterators(ans, candidate) -> bool:
+    if len(ans) != len(candidate):
+        raise RuntimeError("Submitted answer is of incorrect length")
+    for a, b in zip(ans, candidate):
+        if isinstance(a, Iterable) and not isinstance(a, str):
+            if not compare_iterators(a, b):
+                return False
+        else:
+            if a != b:
+                return False
+    return True
 class Grader:
     def __init__(self):
         pass
