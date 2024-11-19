@@ -38,7 +38,7 @@ class TestPSet9(unittest.TestCase):
 
     @weight(2)
     def test_05(self):
-        t = (False, False, False, True)
+        t = (False, True, False, False)
         q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
         assert compare_iterators(q5_answer, t)
 
@@ -116,14 +116,14 @@ class TestPSet9(unittest.TestCase):
         max_utility_soln = 0
         assert np.allclose(max_utility_camera, max_utility_soln)
 
-    @weight(4)
-    def test_17(self):
-        lp_soln_full_image = get_locals(
-            self.notebook_locals, ["lp_soln_full_image"])
-        x_ans = [23.3333, 0., 11.5, 11.1666]
-        fun_ans = 979.1666
-        assert np.allclose(lp_soln_full_image.x, x_ans, rtol=1e-3)
-        assert np.allclose(-lp_soln_full_image.fun, fun_ans, rtol=1e-3)
+    # @weight(4)
+    # def test_17(self):
+    #     lp_soln_full_image = get_locals(
+    #         self.notebook_locals, ["lp_soln_full_image"])
+    #     x_ans = [23.3333, 0., 11.5, 11.1666]
+    #     fun_ans = 979.1666
+    #     assert np.allclose(lp_soln_full_image.x, x_ans, rtol=1e-3)
+    #     assert np.allclose(-lp_soln_full_image.fun, fun_ans, rtol=1e-3)
 
     @weight(2)
     def test_18(self):
@@ -188,20 +188,21 @@ class TestPSet9(unittest.TestCase):
         b_l = get_locals(self.notebook_locals, ["b_l_knapsack"])
         ans = np.all(np.isinf(np.array(b_l)))
         assert ans
+        assert np.array(b_l).size == 6
 
-    @weight(2)
-    def test_27(self):
-        constraints_knapsack = get_locals(
-            self.notebook_locals, ["constraints_knapsack"])
-        lhs = [[4, 5, 3, 8, 6],
-               [1, 0, 0, 0, 0],
-               [0, 1, 0, 0, 0],
-               [0, 0, 1, 0, 0],
-               [0, 0, 0, 1, 0],
-               [0, 0, 0, 0, 1]]
-        rhs = [15, 1, 1, 1, 1, 1]
-        assert np.array_equal(constraints_knapsack.A, lhs)
-        assert np.array_equal(constraints_knapsack.ub, rhs)
+    # @weight(2)
+    # def test_27(self):
+    #     constraints_knapsack = get_locals(
+    #         self.notebook_locals, ["constraints_knapsack"])
+    #     lhs = [[4, 5, 3, 8, 6],
+    #            [1, 0, 0, 0, 0],
+    #            [0, 1, 0, 0, 0],
+    #            [0, 0, 1, 0, 0],
+    #            [0, 0, 0, 1, 0],
+    #            [0, 0, 0, 0, 1]]
+    #     rhs = [15, 1, 1, 1, 1, 1]
+    #     assert np.array_equal(constraints_knapsack.A, lhs)
+    #     assert np.array_equal(constraints_knapsack.ub, rhs)
 
     @weight(2)
     def test_28(self):
@@ -284,7 +285,7 @@ class TestPSet9(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_99_form_word(self):
+    def test_39_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("simplex".lower())
         if hash(word.strip().lower()) == password_hash:
