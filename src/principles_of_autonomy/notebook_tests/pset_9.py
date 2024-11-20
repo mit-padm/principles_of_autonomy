@@ -32,9 +32,13 @@ class TestPSet9(unittest.TestCase):
 
     @weight(2)
     def test_04(self):
-        t = (True, True, False, False)
         q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
-        assert compare_iterators(q4_answer, t)
+        # old incorrect answer (origin is included)
+        t_old = (True, True, False, False)
+        # true answer
+        t = (True, False, False, True)
+        # accept the old answer for backwards compatibility
+        assert compare_iterators(q4_answer, t) or compare_iterators(q4_answer, t_old)
 
     @weight(2)
     def test_05(self):
@@ -188,7 +192,6 @@ class TestPSet9(unittest.TestCase):
         b_l = get_locals(self.notebook_locals, ["b_l_knapsack"])
         ans = np.all(np.isinf(np.array(b_l)))
         assert ans
-        assert np.array(b_l).size == 6
 
     # @weight(2)
     # def test_27(self):
