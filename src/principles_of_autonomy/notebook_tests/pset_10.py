@@ -323,7 +323,7 @@ class TestPSet10(unittest.TestCase):
         assert np.allclose(
             student_ans, ans, atol=1e-4), "Calculated weights are incorrect"
 
-    @weight(5)
+    @weight(10)
     def test_06(self):
         batch_gradient_descent = get_locals(
             self.notebook_locals, ["batch_gradient_descent"])
