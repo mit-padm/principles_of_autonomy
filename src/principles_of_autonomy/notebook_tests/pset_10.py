@@ -323,14 +323,39 @@ class TestPSet10(unittest.TestCase):
         assert np.allclose(
             student_ans, ans, atol=1e-4), "Calculated weights are incorrect"
 
-    @weight(25)
+    @weight(5)
     def test_06(self):
-        # all of the gradient descent steps
-        batch_gradient_descent, stochastic_gradient_descent, mini_batch_gradient_descent = get_locals(
-            self.notebook_locals, ["batch_gradient_descent", "stochastic_gradient_descent", "mini_batch_gradient_descent"])
-        raise NotImplementedError()
+        batch_gradient_descent = get_locals(
+            self.notebook_locals, ["batch_gradient_descent"])
+        train = np.asarray([[3.11793866e-01,  8.42014665e-01,  1.00000000e+00],
+                            [1.18118168e+00, -1.84907492e+00,  1.00000000e+00],
+                            [-6.64466581e-04,  5.35220735e-01,  1.00000000e+00],
+                            [8.50135497e-01, -9.23584957e-01,  1.00000000e+00],
+                            [2.11500691e+00, -1.42619726e+00,  1.00000000e+00],
+                            [-1.00135059e-01,  5.67273652e-01,  1.00000000e+00],
+                            [3.39257626e+00,  2.57794949e+00,  1.00000000e+00],
+                            [1.53617010e+00,  1.48573267e+00,  1.00000000e+00],
+                            [1.95195600e+00,  1.74980414e+00,  1.00000000e+00],
+                            [1.44611645e+00,  1.40569959e+00,  1.00000000e+00],
+                            [3.31511183e+00, -2.82957350e+00,  1.00000000e+00],
+                            [2.94112842e+00, -3.66711592e+00,  1.00000000e+00],
+                            [2.37456561e+00, -2.77239287e+00,  1.00000000e+00],
+                            [1.67545039e+00,  1.61211627e+00,  1.00000000e+00],
+                            [2.09837866e+00, -2.75413880e+00,  1.00000000e+00],
+                            [1.48508593e+00, -1.29458688e+00,  1.00000000e+00],
+                            [1.88190832e+00,  1.77526195e+00,  1.00000000e+00],
+                            [2.01913253e+00,  1.85649457e+00,  1.00000000e+00],
+                            [7.53271912e-01, -4.38671179e-01,  1.00000000e+00],
+                            [2.54264126e+00,  2.24358113e+00,  1.00000000e+00]])
+        labels = np.asarray([0, 1, 1, 0, 0, 1, 1, 1, 1, 1,
+                            0, 0, 0, 1, 0, 0, 1, 1, 0, 1])
+        w = np.asarray([0.3, 0.8, 0.2])
+        out = batch_gradient_descent(train, labels, w, 0.25)
+        ans = np.asarray([0.27032749, 0.84907865, 0.18623564])
+        assert np.allclose(ans, out, atol=1e-4), "Batch gradient descent implementation is incorrect"
 
-    @ weight(5)
+
+    @weight(5)
     def test_07(self):
         SimpleNN = get_locals(self.notebook_locals, ["SimpleNN"])
         inp = (12, 7, 43, 18)
@@ -346,13 +371,13 @@ class TestPSet10(unittest.TestCase):
             n_params, true_n_params), "Number of model parameters is incorrect (should be input_dim * output_dim + output_dim for each linear layer)"
         assert out.shape == (26, inp[-1])
 
-    @ weight(10)
+    @weight(10)
     def test_08(self):
         ans = ('a', 'b')
         mc_answer_set_1 = get_locals(self.notebook_locals, ["mc_answer_set_1"])
         assert compare_iterators(ans, mc_answer_set_1)
 
-    @ weight(5)
+    @weight(5)
     def test_09(self):
         early_stopping = get_locals(self.notebook_locals, ["early_stopping"])
 
@@ -383,11 +408,11 @@ class TestPSet10(unittest.TestCase):
             counter,
             patience
         )
-        assert stop_training, "Training should stop when patience is exceeded (<=)"
+        assert stop_training, "Training should stop when counter >= patience"
         assert np.allclose(
             post_best_val_loss, best_val_loss), "Best val loss should be maintained if not exceeded"
 
-    @ weight(10)
+    @weight(10)
     def test_10(self):
         ans = dict(
             q1=dict(a=True, b=True, c=False),
@@ -402,7 +427,7 @@ class TestPSet10(unittest.TestCase):
             for part, part_ans in v.items():
                 assert student_ans_for_q[part] == part_ans
 
-    @ weight(5)
+    @weight(5)
     @ timeout_decorator.timeout(1.0)
     def test_11(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
