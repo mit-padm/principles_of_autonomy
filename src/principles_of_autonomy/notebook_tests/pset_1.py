@@ -19,9 +19,6 @@ def check_expanded_states(returned_states, correct_states):
         assert correct_state in returned_states, "%s state is not in returned states, and it should be."%(correct_state,)
     
 
-        
-
-
 
 class TestPSet1(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
@@ -69,7 +66,7 @@ class TestPSet1(unittest.TestCase):
                             ((1, 2, 3), (8, 4, 0), (7, 6, 5)),
                             ((1, 2, 3), (0, 8, 4), (7, 6, 5))])
         
-    @weight(45)
+    @weight(35)
     @timeout_decorator.timeout(5.0)
     def test_3_bfs(self):
         PuzzleProblem, breadth_first_search, print_state = get_locals(self.notebook_locals,["PuzzleProblem", "breadth_first_search", "print_state"])
@@ -89,11 +86,73 @@ class TestPSet1(unittest.TestCase):
         else:
             print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
 
+    @weight(25)
+    @timeout_decorator.timeout(5.0)
+    def test_4_dfs(self):
+        SearchNode, depth_first_search, print_state = get_locals(self.notebook_locals,["SearchNode", "depth_first_search", "print_state"])
+
+        def inst_expand_state(state, expand_list):
+            def swap(ori_idx, dest_idx):
+                list_state = list([list(l) for l in state])
+                list_state[ori_idx[0]][ori_idx[1]], list_state[dest_idx[0]][dest_idx[1]] = \
+                    list_state[dest_idx[0]][dest_idx[1]], list_state[ori_idx[0]][ori_idx[1]]
+                return tuple(tuple(l) for l in list_state)
+                        
+            hole_idx = (-1,-1)
+            for (i,l) in enumerate(state):
+                for (j,el) in enumerate(l):
+                    if el==0:
+                        hole_idx = (i,j)
+                        break
+            dest_idx = [(hole_idx[0]+a, hole_idx[1]+b) for a,b in expand_list]
+            valid_idx = lambda idx: 0<=idx[0]<=2 and 0<=idx[1]<=2
+            dest_idx = filter(valid_idx, dest_idx)
+            states = [swap(hole_idx, d_idx) for d_idx in dest_idx]
+            return states
+
+        class InstPuzzleProblem(object):
+            """Class that represents the puzzle search problem."""
+            def __init__(self, start, goal, expand_list):
+                self.start = start
+                self.goal = goal
+                self.expand_list = expand_list
+            def test_goal(self, state):
+                return self.goal == state
+            def expand_node(self, search_node):
+                """Return a list of SearchNodes, having the correct state and parent node."""
+                expanded_sn = [SearchNode(new_state, search_node)
+                            for new_state in inst_expand_state(search_node.state, self.expand_list)]
+                return expanded_sn
+
+        minimal_start = ((1,2,3),(4,5,6),(7,0,8))
+        minimal_goal = ((1,2,3),(4,5,6),(7,8,0))
+
+        right_last_in = [(-1,0),(0,-1),(1,0),(0,1)]
+        problem = InstPuzzleProblem(minimal_start, minimal_goal, right_last_in)
+        sol, num_visited, max_q = depth_first_search(problem)
+
+        right_first_in = [(0,1),(1,0),(0,-1),(-1,0)]
+        problem = InstPuzzleProblem(minimal_start, minimal_goal, right_first_in)
+        backtrack_sol, backtrack_num_visited, backtrack_max_q = depth_first_search(problem)
+
+        if sol:
+            assert sol and len(sol.path) == 2, "Expanding nodes in an ideal order did not return the expected 2-state solution"
+            assert sol.path[0] == minimal_start, "The first state in the path is not the start state"
+            assert sol.path[-1] == minimal_goal, "The last state in the path is not the goal state"
+            assert len(backtrack_sol.path) > len(sol.path), "Expanding nodes in a non-ideal order returned the shortest solution. Make sure you wrote DFS, not BFS!"
+            assert backtrack_num_visited > len(backtrack_sol.path), "DFS did not backtrack"
+            print("Solution: ")
+            for s in sol.path:
+                print_state(s)
+                print("\n**\n")
+        else:
+            print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
+
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_4_form_word(self):
+    def test_5_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("Alpha".lower())
+        password_hash = hash("Apple Pie".lower())
         if hash(word.strip().lower()) == password_hash:
             return
         else:
