@@ -13,6 +13,7 @@ from collections.abc import Iterable
 import nbformat
 from gradescope_utils.autograder_utils.json_test_runner import JSONTestRunner
 from nbconvert import PythonExporter, preprocessors
+import zipfile
 
 grader_throws = False
 
@@ -208,3 +209,41 @@ class Grader:
             # print error message if any
             if "output" in test:
                 print("- " + test["output"])
+
+    @staticmethod
+    def prepare_submission(notebook_name):
+        input_nb = f"{notebook_name}.ipynb"
+        output_nb = f"{notebook_name}_responses_only.ipynb"
+
+        # Load input notebook
+        with open(input_nb, "r", encoding="utf-8") as f:
+            nb = nbformat.read(f, as_version=4)
+
+        # Create results-only notebook
+        new_nb = nbformat.v4.new_notebook()
+        new_nb.cells = []
+
+        # Extract "Write your answer in the cell below this one" + following cell
+        for i, cell in enumerate(nb.cells):
+            cell = nb.cells[i]
+            if cell.cell_type == "markdown" and "Write your answer in the cell below this one." in cell.source:
+                new_nb.cells.append(cell)
+                if i + 1 < len(nb.cells):
+                    new_nb.cells.append(nb.cells[i + 1])
+
+        # Save results-only notebook
+        with open(output_nb, "w", encoding="utf-8") as f:
+            nbformat.write(new_nb, f)
+
+        print(f"Open-ended responses written to {output_nb}")
+
+        zip_name = f"{os.path.basename(os.getcwd())}.zip"
+
+        with zipfile.ZipFile(zip_name, "w") as zf:
+            for file in os.listdir('.'):
+                if os.path.isfile(file) and not file.endswith(".zip") :  # only add files, skip subfolders
+                    zf.write(file, arcname=file)  # arcname strips the folder name
+
+        print(f"Created {zip_name}")
+
+
