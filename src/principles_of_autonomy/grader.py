@@ -244,6 +244,6 @@ class Grader:
                 if os.path.isfile(file) and not file.endswith(".zip") :  # only add files, skip subfolders
                     zf.write(file, arcname=file)  # arcname strips the folder name
 
-        print(f"Created {zip_name}")
+        print(f"Compressed files in folder to {zip_name} (submit this to Gradescope)")
 
 
