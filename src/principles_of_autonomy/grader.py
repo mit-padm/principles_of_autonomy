@@ -222,7 +222,7 @@ class Grader:
 
         # Load input notebook
         input_nb = os.path.join(active_folder, input_nb)
-        output_nb = os.path.join(active_folder, output_nb)
+        output_nb = os.path.join(active_folder, f"{notebook_name}_responses_only.ipynb")
         with open(input_nb, "r", encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
 
