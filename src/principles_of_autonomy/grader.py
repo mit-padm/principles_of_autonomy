@@ -244,12 +244,16 @@ class Grader:
 
         print(f"Open-ended responses written to {output_nb}")
 
-        zip_name = f"{os.path.basename(os.getcwd())}.zip"
+        if not active_folder:
+            active_folder = os.path.join("../", os.path.basename(os.getcwd()))
+
+        folder_name = os.path.basename(active_folder)
+        zip_name = f"{active_folder}/{folder_name}.zip"
 
         with zipfile.ZipFile(zip_name, "w") as zf:
-            for file in os.listdir('.'):
-                if os.path.isfile(file) and not file.endswith(".zip") :  # only add files, skip subfolders
-                    zf.write(file, arcname=file)  # arcname strips the folder name
+            for file in os.listdir(active_folder):
+                if os.path.isfile(os.path.join(active_folder, file)) and not file.endswith(".zip") :  # only add files, skip subfolders
+                    zf.write(os.path.join(active_folder, file), arcname=file)  # arcname strips the folder name        zip_name = f"{os.path.basename(os.getcwd())}.zip"
 
         print(f"Compressed files in folder to {zip_name} (submit this to Gradescope)")
 
