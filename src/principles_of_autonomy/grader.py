@@ -2,6 +2,7 @@
 
 import json
 import os
+import glob
 from pathlib import Path
 import shutil
 import sys
@@ -212,10 +213,16 @@ class Grader:
 
     @staticmethod
     def prepare_submission(notebook_name):
+        # Determine file system format
         input_nb = f"{notebook_name}.ipynb"
-        output_nb = f"{notebook_name}_responses_only.ipynb"
+        file_match = glob.glob(f"**/*{input_nb}", recursive=True)
+        if not file_match:
+            raise NameError("Required files not found - Please submit homework manually.")
+        active_folder = os.path.dirname(file_match[0])
 
         # Load input notebook
+        input_nb = os.path.join(active_folder, input_nb)
+        output_nb = os.path.join(active_folder, output_nb)
         with open(input_nb, "r", encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
 
