@@ -46,7 +46,7 @@ class TestPSet2(unittest.TestCase):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    @weight(5)
+    @weight(2)
     @timeout_decorator.timeout(5.0)
     def test_01_romania_graph(self):
         romania_graph, romania_locations, romania_connections, Edge = get_locals(
@@ -65,7 +65,7 @@ class TestPSet2(unittest.TestCase):
                 assert Edge(src, target, weight) in functools.reduce(
                     lambda a, b: a + list(b), romania_graph._edges.values(), []), "Missing or wrong edge."
 
-    @weight(5)
+    @weight(3)
     @timeout_decorator.timeout(5.0)
     def test_02_graph_search_problem(self):
         GraphSearchProblem, romania_graph, SearchNode, romania_connections = get_locals(
@@ -100,13 +100,13 @@ class TestPSet2(unittest.TestCase):
         assert result[1] == 15
         assert result[2] == 4
 
-    @weight(5)
+    @weight(3)
     @timeout_decorator.timeout(5.0)
     def test_04_euclid_distance(self):
         eucl_dist = get_locals(self.notebook_locals, ["eucl_dist"])
         assert np.isclose(eucl_dist((-12, 47), (10, -5)), 56.46237685)
 
-    @weight(5)
+    @weight(2)
     @timeout_decorator.timeout(5.0)
     def test_05_euclid_heuristic(self):
         h_to_G, SearchNode = get_locals(
@@ -119,7 +119,19 @@ class TestPSet2(unittest.TestCase):
 
     @weight(10)
     @timeout_decorator.timeout(5.0)
-    def test_06_astar(self):
+    def test_06_greedy(self):
+        GraphSearchProblem, romania_graph, h_to_G, greedy_search = get_locals(
+            self.notebook_locals, ["GraphSearchProblem",
+                                   "romania_graph", "h_to_G", "greedy_search"]
+        )
+        test_problem = GraphSearchProblem(romania_graph, "A", "G")
+        result = greedy_search(test_problem, h_to_G)
+        assert result[0].cost == 540, "Cost should be 540."
+        assert result[0].path == ['A', 'S', 'F', 'B', 'G']
+
+    @weight(10)
+    @timeout_decorator.timeout(5.0)
+    def test_07_astar(self):
         GraphSearchProblem, romania_graph, h_to_G, astar_search = get_locals(
             self.notebook_locals, ["GraphSearchProblem",
                                    "romania_graph", "h_to_G", "astar_search"]
@@ -131,7 +143,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(15)
     @timeout_decorator.timeout(5.0)
-    def test_07_grid_to_graph(self):
+    def test_08_grid_to_graph(self):
         Grid, grid_to_graph, Edge = get_locals(
             self.notebook_locals, ["Grid", "grid_to_graph", "Edge"]
         )
@@ -176,7 +188,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(5.0)
-    def test_08_eucl_dist_cell(self):
+    def test_09_eucl_dist_cell(self):
         eucl_dist_cell, SearchNode = get_locals(
             self.notebook_locals, ["eucl_dist_cell", "SearchNode"]
         )
@@ -189,7 +201,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(5.0)
-    def test_09_astar_grid(self):
+    def test_10_astar_grid(self):
         Grid, eucl_dist_cell, grid_to_graph, GraphSearchProblem, astar_search = get_locals(
             self.notebook_locals, [
                 "Grid", "eucl_dist_cell", "grid_to_graph", "GraphSearchProblem", "astar_search"]
@@ -209,9 +221,9 @@ class TestPSet2(unittest.TestCase):
             (2, 1), (1, 0), (0, 1), (0, 2), (0, 3), (1, 4), (2, 4), (3, 4), (4, 3)]
         assert np.isclose(solution_astar.cost, 9.65685424949238)
 
-    @weight(5)
+    @weight(2)
     @timeout_decorator.timeout(1.0)
-    def test_10_collision_testing(self):
+    def test_11_collision_testing(self):
         collision_free, Environment, Point = get_locals(
             self.notebook_locals, ["collision_free", "Environment", "Point"]
         )
@@ -225,9 +237,9 @@ class TestPSet2(unittest.TestCase):
         assert not collision_free((3.5, 1.5), 0.001, env)
         assert collision_free((0.0, 0.0), 2, env)
 
-    @weight(5)
+    @weight(3)
     @timeout_decorator.timeout(1.0)
-    def test_11_nearest_neighbor(self):
+    def test_12_nearest_neighbor(self):
         find_nearest_neighbor, Node = get_locals(
             self.notebook_locals, ["find_nearest_neighbor", "Node"]
         )
@@ -247,7 +259,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_12_extend(self):
+    def test_13_extend(self):
         extend, Environment, Node = get_locals(
             self.notebook_locals, ["extend", "Environment", "Node"]
         )
@@ -271,7 +283,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(10)
     @timeout_decorator.timeout(5.0)
-    def test_13_simple_environment(self):
+    def test_14_simple_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
             self.notebook_locals, ["path_simple", "bounds_simple", "environment_simple",
@@ -281,7 +293,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(10)
     @timeout_decorator.timeout(5.0)
-    def test_14_bugtrap_environment(self):
+    def test_15_bugtrap_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
             self.notebook_locals, ["path_bugtrap", "bounds_bugtrap", "environment_bugtrap",
@@ -291,7 +303,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(20)
     @timeout_decorator.timeout(5.0)
-    def test_15_complex_environment(self):
+    def test_16_complex_environment(self):
 
         path, bounds, environment, start, radius, goal_region = get_locals(
             self.notebook_locals, ["path_challenging", "bounds_challenging", "environment_challenging",
@@ -300,10 +312,10 @@ class TestPSet2(unittest.TestCase):
         check_path(path, bounds, environment, start, radius, goal_region)
 
     @weight(5)
-    @timeout_decorator.timeout(60.0)
+    @timeout_decorator.timeout(5.0)
     def test_16_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("Bravo".lower())
+        password_hash = hash("Bibimbap".lower())
         if hash(word.strip().lower()) == password_hash:
             return
         else:
