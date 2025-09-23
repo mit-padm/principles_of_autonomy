@@ -18,7 +18,7 @@ def test_ok():
         <strong>Test passed!!</strong>
         </div>""", raw=True)
     except:
-        print("test ok!!")
+        print("Test passed!!")
 
 class TestPSet3(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
@@ -26,7 +26,7 @@ class TestPSet3(unittest.TestCase):
         self.notebook_locals = notebook_locals
 
     @weight(5)
-    def test_1(self):
+    def test_01(self):
         q1_answer = get_locals(self.notebook_locals, ["q1_answer"])
         answer = 1
         assert q1_answer == answer, "Incorrect values."
@@ -34,7 +34,7 @@ class TestPSet3(unittest.TestCase):
         test_ok()
 
     @weight(5)
-    def test_2(self):
+    def test_02(self):
         q2_answer = get_locals(self.notebook_locals, ["q2_answer"])
         answer = (True, False, True, True, True, False, True, False)
         assert len(q2_answer) == len(answer), f"Incorrect number of values, need {len(answer)} True / False values"
@@ -43,7 +43,7 @@ class TestPSet3(unittest.TestCase):
         test_ok()
 
     @weight(5)
-    def test_3(self):
+    def test_03(self):
         q3_answer = get_locals(self.notebook_locals, ["q3_answer"])
         answer = (True, False, True, True, True, True, True, True)
         assert len(q3_answer) == len(answer), f"Incorrect number of values, need {len(answer)} True / False values"
@@ -52,7 +52,7 @@ class TestPSet3(unittest.TestCase):
         test_ok()
 
     @weight(5)
-    def test_4(self):
+    def test_04(self):
         q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
         answer = (False, True, False)
         assert len(q4_answer) == len(answer), f"Incorrect number of values, need {len(answer)} True / False values"
@@ -61,7 +61,7 @@ class TestPSet3(unittest.TestCase):
         test_ok()
 
     @weight(10)
-    def test_5(self):
+    def test_05(self):
         q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
         answer =  ('F', 'V', 'T', 'F', 'F', 'T', 'U')
         assert len(q5_answer) == len(answer), f"Incorrect number of values, need {len(answer)} characters"
@@ -71,7 +71,7 @@ class TestPSet3(unittest.TestCase):
 
 
     @weight(5)
-    def test_6(self):
+    def test_06(self):
         warmup = get_locals(self.notebook_locals, 
                                                   ["warmup"])
         answer = warmup()
@@ -79,13 +79,13 @@ class TestPSet3(unittest.TestCase):
         assert len(answer[0])==3 and len(answer[1])==3 and len(answer[2])==2, "Incorrect number of literals in each clause"
         assert (4 in answer[0] and -5 in answer[0] and -6 in answer[0] and 
                 6 in answer[1] and 5 in answer[1] and -1 in answer[1] and
-                2 in answer[2] and 3 in answer[3]), "Incorrect literals"
+                2 in answer[2] and 3 in answer[2]), "Incorrect literals"
         assert answer == [[4, -5, -6], [6, 5, -1], [2, 3]], "Incorrect order of literals"
 
         test_ok()
 
     @weight(30)
-    def test_7(self):
+    def test_07(self):
         run_inference_dpll = get_locals(self.notebook_locals,
                                            ["run_inference_dpll"])
         assert run_inference_dpll([[-1, 2]]) in [(True, {1: True, 2: True}), (True, {1: False, 2: True}), (True, {1: False, 2: False})]
@@ -96,20 +96,20 @@ class TestPSet3(unittest.TestCase):
         test_ok()
 
     @weight(5)
-    def test_8(self):
+    def test_08(self):
         formula1_is_satisfiable = get_locals(self.notebook_locals, ["formula1_is_satisfiable"])
         is_satisfiable, formula = formula1_is_satisfiable()
         assert is_satisfiable == True, "Incorrect boolean value"
-        assert isinstance(formula, sympy.Expr), "Not a sympy formula"
+        assert isinstance(formula, sympy.logic.boolalg.Boolean), "Not a sympy formula"
 
         test_ok()
 
     @weight(5)
-    def test_9(self):
+    def test_09(self):
         formula2_is_satisfiable = get_locals(self.notebook_locals, ["formula2_is_satisfiable"])
         is_satisfiable, formula = formula2_is_satisfiable()
         assert is_satisfiable == False, "Incorrect boolean value"
-        assert isinstance(formula, sympy.Expr), "Not a sympy formula"
+        assert isinstance(formula, sympy.logic.boolalg.Boolean), "Not a sympy formula"
 
         test_ok()
 
