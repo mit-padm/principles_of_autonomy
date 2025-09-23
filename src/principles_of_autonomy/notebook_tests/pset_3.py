@@ -20,7 +20,7 @@ def test_ok():
     except:
         print("test ok!!")
 
-class TestPSet8(unittest.TestCase):
+class TestPSet3(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
