@@ -254,13 +254,13 @@ class TestPSet4(unittest.TestCase):
 
         assert solution is not None, "No solution returned for feasible Australia map"
         assert is_complete_and_valid(csp, solution), "Returned assignment is not a complete, valid coloring"
-        assert len(steps) > 10, "Naive Search should explore many many nodes - make sure you did not implement backtracking or forward checking instead"
+        assert steps > 10, "Naive Search should explore many many nodes - make sure you did not implement backtracking or forward checking instead"
 
         csp_impossible = australia_map_coloring_impossible()
         solution_impossible, steps_impossible = naive_search(csp_impossible)
 
         assert solution_impossible is None, "Solution incorrectly returned for impossible Australia map"
-        assert len(steps_impossible) > 10, "Naive Search should explore many many nodes - make sure you did not implement backtracking or forward checking instead"
+        assert steps_impossible > 10, "Naive Search should explore many many nodes - make sure you did not implement backtracking or forward checking instead"
 
         test_ok()
 
@@ -274,14 +274,14 @@ class TestPSet4(unittest.TestCase):
 
         assert solution_bt is not None, "No solution returned for feasible Australia map"
         assert is_complete_and_valid(csp, solution_bt), "Returned assignment is not a complete, valid coloring"
-        assert len(steps_bt) < len(steps_naive), "Backtracking should explore fewer nodes than naive search"
+        assert steps_bt < steps_naive, "Backtracking should explore fewer nodes than naive search"
 
         csp_impossible = australia_map_coloring_impossible()
         solution_impossible_naive, steps_impossible_naive = naive_search(csp_impossible)
         solution_impossible_bt, steps_impossible_bt = backtracking_search(csp_impossible)
 
         assert solution_impossible_bt is None, "Solution incorrectly returned for impossible Australia map"
-        assert len(steps_impossible_bt) < len(steps_impossible_naive), "Backtracking should explore fewer nodes than naive search on the impossible Australia map"
+        assert steps_impossible_bt < steps_impossible_naive, "Backtracking should explore fewer nodes than naive search on the impossible Australia map"
 
         test_ok()
 
@@ -295,14 +295,14 @@ class TestPSet4(unittest.TestCase):
 
         assert solution_fc is not None, "No solution returned for feasible Australia map"
         assert is_complete_and_valid(csp, solution_fc), "Returned assignment is not a complete, valid coloring"
-        assert len(steps_fc) <= len(steps_bt), "Forward checking should explore at most the same number of nodes as backtracking"
+        assert steps_fc <= steps_bt, "Forward checking should explore at most the same number of nodes as backtracking"
 
         csp_impossible = australia_map_coloring_impossible()
         solution_impossible_bt, steps_impossible_bt = backtracking_search(csp_impossible)
         solution_impossible_fc, steps_impossible_fc = forward_checking_search(csp_impossible)
 
         assert solution_impossible_fc is None, "Solution incorrectly returned for impossible Australia map"
-        assert len(steps_impossible_fc) < len(steps_impossible_bt), "For the impossible Australia map, forward checking should explore fewer nodes than backtracking"
+        assert steps_impossible_fc < steps_impossible_bt, "For the impossible Australia map, forward checking should explore fewer nodes than backtracking"
 
     @weight(5)
     def test_04(self):
