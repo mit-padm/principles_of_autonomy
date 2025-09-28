@@ -260,7 +260,7 @@ class TestPSet4(unittest.TestCase):
         solution_impossible, steps_impossible = naive_search(csp_impossible)
 
         assert solution_impossible is None, "Solution incorrectly returned for impossible Australia map"
-        assert steps_impossible > 10, "Naive Search should explore many many nodes - make sure you did not implement backtracking or forward checking instead"
+        assert steps_impossible == 255, "Naive Search should explore EVERY node before determining that there is no solution"
 
         test_ok()
 
