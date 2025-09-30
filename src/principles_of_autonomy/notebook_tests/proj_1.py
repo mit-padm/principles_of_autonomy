@@ -7,89 +7,6 @@ from gradescope_utils.autograder_utils.decorators import weight
 from principles_of_autonomy.grader import get_locals
 import numpy as np
 
-import os
-import time
-import tempfile
-from pyperplan.pddl.parser import Parser
-from pyperplan import grounding, planner
-
-def get_task_definition_str(domain_pddl_str, problem_pddl_str):
-    """Get Pyperplan task definition from PDDL domain and problem.
-
-    This function is a lightweight wrapper around Pyperplan.
-
-    Args:
-      domain_pddl_str: A str, the contents of a domain.pddl file.
-      problem_pddl_str: A str, the contents of a problem.pddl file.
-
-    Returns:
-      task: a structure defining the problem
-    """
-    # Parsing the PDDL
-    domain_file = tempfile.NamedTemporaryFile(delete=False)
-    problem_file = tempfile.NamedTemporaryFile(delete=False)
-    with open(domain_file.name, 'w') as f:
-        f.write(domain_pddl_str)
-    with open(problem_file.name, 'w') as f:
-        f.write(problem_pddl_str)
-    parser = Parser(domain_file.name, problem_file.name)
-    domain = parser.parse_domain()
-    problem = parser.parse_problem(domain)
-    os.remove(domain_file.name)
-    os.remove(problem_file.name)
-
-    # Ground the PDDL
-    task = grounding.ground(problem)
-    return task
-
-
-def run_planning(domain_pddl_str,
-                 problem_pddl_str,
-                 search_alg_name,
-                 heuristic_name=None,
-                 return_time=False):
-    """Plan a sequence of actions to solve the given PDDL problem.
-
-    This function is a lightweight wrapper around pyperplan.
-
-    Args:
-      domain_pddl_str: A str, the contents of a domain.pddl file.
-      problem_pddl_str: A str, the contents of a problem.pddl file.
-      search_alg_name: A str, the name of a search algorithm in
-        pyperplan. Options: astar, wastar, gbf, bfs, ehs, ids, sat.
-      heuristic_name: A str, the name of a heuristic in pyperplan.
-        Options: blind, hadd, hmax, hsa, hff, lmcut, landmark.
-      return_time:  Bool. Set to `True` to return the planning time.
-
-    Returns:
-      plan: A list of actions; each action is a pyperplan Operator.
-    """
-    # Ground the PDDL
-    task = get_task_definition_str(domain_pddl_str, problem_pddl_str)
-
-    # Get the search alg
-    search_alg = planner.SEARCHES[search_alg_name]
-
-    if heuristic_name is None:
-        if not return_time:
-            return search_alg(task)
-        start_time = time.time()
-        plan = search_alg(task)
-        plan_time = time.time() - start_time
-        return plan, plan_time
-
-    # Get the heuristic
-    heuristic = planner.HEURISTICS[heuristic_name](task)
-
-    # Run planning
-    start_time = time.time()
-    plan = search_alg(task, heuristic)
-    plan_time = time.time() - start_time
-
-    if return_time:
-        return plan, plan_time
-    return plan
-
 # Function for tests
 def test_ok():
     try:
@@ -130,7 +47,7 @@ class TestProj1(unittest.TestCase):
         problem = SearchAndRescueProblem()
         plan = sar_warmup2()
         state = execute_plan(problem, plan, State())
-        assert state.people["p1"] == (6, 6), f"p1 not delivered to the hospital location, still at {state.people["p1"]}"
+        assert state.people["p1"] == (6, 6), f"p1 not delivered to the hospital location, still at {state.people['p1']}"
 
         test_ok()
 
