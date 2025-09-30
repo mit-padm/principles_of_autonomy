@@ -53,14 +53,10 @@ class TestProj1(unittest.TestCase):
 
     @weight(5)
     def test_03_sar_pddl(self):
-        SearchAndRescuePlanner, SearchAndRescueProblem, State, execute_count_num_delivered = get_locals(self.notebook_locals, ["SearchAndRescuePlanner", "SearchAndRescueProblem", "State", "execute_count_num_delivered"])
+        sar_pddl_problem, sar_pddl_state, sar_pddl_plan, execute_count_num_delivered = get_locals(self.notebook_locals, ["sar_pddl_problem", "sar_pddl_state", "sar_pddl_plan", "execute_count_num_delivered"])
 
-        problem = SearchAndRescueProblem()
-        planner = SearchAndRescuePlanner(search_algo="gbf", heuristic="hff")
-        state = State()
-        plan, plan_time = planner.get_plan(state)
-        assert plan is not None, "Plan not found for feasible problem"
-        assert execute_count_num_delivered(problem=problem, state=state, plan=plan, visualize=False) == 4, "All people not delivered to hospital"
+        assert sar_pddl_plan is not None, "Plan not found for feasible problem"
+        assert execute_count_num_delivered(problem=sar_pddl_problem, state=sar_pddl_state, plan=sar_pddl_plan, visualize=False) == 4, "All people not delivered to hospital"
 
         test_ok()
 
@@ -131,51 +127,20 @@ class TestProj1(unittest.TestCase):
 
     @weight(7)
     def test_06_safe_not_smart(self):
-        SearchAndRescueProblem, State, BeliefState, make_greedy_policy, agent_loop = get_locals(self.notebook_locals, ["SearchAndRescueProblem", "State", "BeliefState", "make_greedy_policy", "agent_loop"])
+        greedy_in_empty_result, greedy_in_default_distance = get_locals(self.notebook_locals, ["greedy_in_empty_result", "greedy_in_default_distance"])
 
-        problem = SearchAndRescueProblem()
-        policy = make_greedy_policy(problem)
+        s_or_f, final_state, final_bel = greedy_in_empty_result
+        assert final_state.robot == final_state.hospital, "Robot should be able to make it to the hospital in a clear map"
+        assert s_or_f == '*Success*', "Robot did not correctly report that it was successful"
 
-        # Empty map
-        state = State()
-        state.state_map[:, :] = 'C'
-        bel = BeliefState()
-        bel.state_map[:, :] = 'C'
-
-        s_or_f, final_state, final_bel = agent_loop(problem, state, policy, bel, visualize=False)
-        assert s_or_f == '*Success*' and final_state.robot == final_state.hospital, "Robot should be able to make it to the hospital in a clear map"
-
-        problem = SearchAndRescueProblem()
-
-        # Use default map
-        state = State()
-        bel = BeliefState()
-
-        policy = make_greedy_policy(problem)
-        s_or_f, final_state, final_bel = agent_loop(problem, state, policy, bel, visualize=False)
-        r, c = final_state.robot
-        hr, hc = final_state.hospital
-        distance = abs(hr - r) + abs(hc - c)
-        assert distance < 12, "Despite being not-so-smart, the robot should at least get closer to the hospital than its start position"
+        assert greedy_in_default_distance < 12, "Despite being not-so-smart, the robot should at least get closer to the hospital than its start position"
 
         test_ok()
 
     @weight(7)
     def test_07_safe_smart(self):
-        SearchAndRescueProblem, SearchAndRescuePlanner, State, BeliefState, make_planner_policy, agent_loop, get_num_delivered = get_locals(self.notebook_locals, ["SearchAndRescueProblem", "SearchAndRescuePlanner", "State", "BeliefState", "make_planner_policy", "agent_loop", "get_num_delivered"])
-
-        problem = SearchAndRescueProblem()
-        base_planner = SearchAndRescuePlanner(search_algo="gbf", heuristic="hff")
-
-        def planner(state):
-            plan, time = base_planner.get_plan(state)
-            return plan
-
-        policy = make_planner_policy(problem, planner)
-        state = State()
-        # Observable
-        bel = BeliefState(state_map=state.state_map)
-        s_or_f, final_state, final_bel = agent_loop(problem, state, policy, bel, visualize=False)
+        sar_policy_results, get_num_delivered = get_locals(self.notebook_locals, ["sar_policy_results", "get_num_delivered"])
+        s_or_f, final_state, final_bel = sar_policy_results
         assert get_num_delivered(final_state) == 4, "All people not delivered to hospital"
 
         test_ok()
