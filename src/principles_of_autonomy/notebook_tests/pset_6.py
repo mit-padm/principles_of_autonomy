@@ -133,7 +133,7 @@ class TestPSet6(unittest.TestCase):
         self.notebook_locals = notebook_locals
 
     # problem 1, total score 60
-    @weight(10)
+    @weight(5)
     @timeout_decorator.timeout(5.0)
     def test_1_convergence(self):
         f_converge  = get_locals(
@@ -318,7 +318,7 @@ class TestPSet6(unittest.TestCase):
         test_ok()
 
 
-    @weight(5)
+    @weight(10)
     @timeout_decorator.timeout(5.0)
     def test_4_observations(self):
         answer = get_locals(self.notebook_locals, ["answer"])
