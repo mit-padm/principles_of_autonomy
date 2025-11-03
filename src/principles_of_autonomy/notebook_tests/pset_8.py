@@ -93,7 +93,7 @@ class TestPSet8(unittest.TestCase):
     def test_07(self):
         q7_answer = get_locals(self.notebook_locals, ["q7_answer"])
         answer = 8
-        assert q7_answer % 0 == 0, "Can't have a decimal number of rows."
+        assert isinstance(q7_answer, int), "Can't have a decimal number of rows."
         assert q7_answer == answer, "Incorrect values."
 
         test_ok()
