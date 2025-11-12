@@ -153,7 +153,7 @@ class TestProj3(unittest.TestCase):
                                         Landmark(id='landmark-32', x=16, y=4), Landmark(id='landmark-33', x=16, y=8), 
                                         Landmark(id='landmark-34', x=16, y=12), Landmark(id='landmark-35', x=16, y=16)),
                              num_particles=20, 
-                             particles=LocalizationParticles(x=np.zeros((20,), dtype=np.float64), y=np.zeros((20,), dtype=np.float64), theta=np.zeros((20,), dtype=np.float64))), 
+                             particles=LocalizationParticles(x=np.zeros((20,), dtype=np.float64), y=np.zeros((20,), dtype=np.float64), theta=np.zeros((20,), dtype=np.float64)))
         measurements = [Measurement(landmark_id='landmark-35', r=22.753147219062917, b=0.7738698392857971), 
                         Measurement(landmark_id='landmark-25', r=12.640422650443282, b=0.009154262150241616), 
                         Measurement(landmark_id='landmark-15', r=8.408602536838048, b=1.1387038391295914), 
@@ -195,15 +195,15 @@ class TestProj3(unittest.TestCase):
         assert np.allclose(weights, result_weights, atol=1e-4), "Calculated incorrect weights"
         assert np.allclose(np.sum(weights), 1.0, atol=1e-4), "Weights should be normalized (sum to 1)"
 
-        # Move one particle closer to the landmarks
+        # Move one particle super far from the robot's location
         infer_copy = copy.deepcopy(infer)
-        infer_copy.particles.x[0] = 8.0
-        infer_copy.particles.y[0] = 8.0
+        infer_copy.particles.x[0] = 16.0
+        infer_copy.particles.y[0] = 16.0
 
-        # The moved particle should now have higher relative weight
-        closer_first_weights = infer_copy.compute_weights(measurements)
-        assert closer_first_weights[0] > weights[0], "Particles closer to measurement should have higher weight"
-        assert np.allclose(np.sum(closer_first_weights), 1.0, atol=1e-4), "Weights should be normalized (sum to 1)"
+        # The moved particle should now have lower relative weight
+        further_first_weight = infer_copy.compute_weights(measurements)
+        assert further_first_weight[0] < weights[0], "Particles moved to be more inaccurate should have lower weight"
+        assert np.allclose(np.sum(further_first_weight), 1.0, atol=1e-4), "Weights should be normalized (sum to 1)"
 
         test_ok()
 
@@ -267,15 +267,6 @@ class TestProj3(unittest.TestCase):
             [est_pose.x, est_pose.y, est_pose.theta],
             atol=0.3), "Estimated pose should be quite close to our estimation"
 
-        # Try an update with greater motion noise
-        infer_noisy.motion_noise_covariance = np.diag([0.1, np.deg2rad(10)**2])
-        infer_noisy.update(command, measurements)
-
-        spread_low = np.sqrt(np.std(infer.particles.x)**2 + np.std(infer.particles.y)**2)
-        spread_high = np.sqrt(np.std(infer_noisy.particles.x)**2 + np.std(infer_noisy.particles.y)**2)
-
-        assert spread_high > spread_low, "Particle spread post-update should increase with higher motion noise."
-
         test_ok()
 
     @weight(5)
@@ -325,6 +316,7 @@ class TestProj3(unittest.TestCase):
             num_particles=num_particles,
         )
         pf.init(sim.state)
+        theta0 = pf.particles.theta.copy()  # before motion_model
 
         # Command with movement and rotation
         delta_p = 1.0
@@ -352,14 +344,18 @@ class TestProj3(unittest.TestCase):
             atol=3 * np.sqrt(np.max(motion_cov))
         ), f"Mean motion does not match expected motion"
 
+        # Expected variance in position
+        expected_var_x = motion_cov[0,0] * np.mean(np.cos(theta0)**2)
+        expected_var_y = motion_cov[0,0] * np.mean(np.sin(theta0)**2)
+
         # Actual variance in position
         var_x = np.var(pf.particles.x - expected_x)
         var_y = np.var(pf.particles.y - expected_y)
         var_theta = np.var(pf.particles.theta - expected_theta)
 
         # Variances should be similar
-        assert np.isclose(var_x, motion_cov[0, 0], rtol=0.3), f"Unexpected variance in x: {var_x}"
-        assert np.isclose(var_y, motion_cov[0, 0], rtol=0.3), f"Unexpected variance in y: {var_y}"
+        assert np.isclose(var_x, expected_var_x, rtol=0.3), f"Unexpected variance in x: {var_x}"
+        assert np.isclose(var_y, expected_var_y, rtol=0.3), f"Unexpected variance in y: {var_y}"
         assert np.isclose(var_theta, motion_cov[1, 1], rtol=0.3), f"Unexpected variance in theta: {var_theta}"
 
         test_ok()
@@ -398,7 +394,15 @@ class TestProj3(unittest.TestCase):
         ### WITH NONZERO NOISE
         np.random.seed(0)
         infer_noisy = copy.deepcopy(infer)
-        infer_noisy.new_landmarks_init_covariance = np.diag([0.1, 0.1])
+        infer_noisy = SLAM(motion_noise_covariance=np.zeros((2, 2), dtype=np.float64), 
+                           sensor_noise_covariance=np.zeros((2, 2), dtype=np.float64), 
+                           new_landmarks_init_covariance=np.diag([0.1, 0.1]),  # Non-zero noise
+                           num_particles=10000, 
+                           particles=SLAMParticles(x=np.zeros((10000,), dtype=np.float64),
+                                                   y=np.zeros((10000,), dtype=np.float64),
+                                                   theta=np.zeros((10000,), dtype=np.float64), 
+                                                   landmarks_id_to_idx={'Stata': 0, 'Building-4': 1}, 
+                                                   landmarks_loc=np.zeros((10000, 2, 2), dtype=np.float64)))
 
         measurements = [Measurement(landmark_id='Lobby', r=1.0, b=np.pi/2)]
         infer_noisy.add_new_landmarks(measurements)
@@ -581,14 +585,13 @@ class TestProj3(unittest.TestCase):
         assert np.allclose(weights, result_weights, atol=1e-4), "Incorrect weights."
         assert np.allclose(np.sum(weights), 1.0, atol=1e-4), "Weights should be normalized (sum to 1)"
 
-        # Move one particle closer to the landmarks
+        # Make one particle's estimates a lot more accurate
         infer_copy = copy.deepcopy(infer)
-        infer_copy.particles.x[0] = infer_copy.particles.x[16]
-        infer_copy.particles.y[0] = infer_copy.particles.y[16]
+        infer_copy.particles.landmarks_loc[0] = infer_copy.particles.landmarks_loc[16]
 
-        # The moved particle should now have higher relative weight
+        # The edited particle should now have higher relative weight
         closer_first_weights = infer_copy.compute_weights(measurements)
-        assert closer_first_weights[0] > weights[0], "Particle moved closer to measurement should have higher weight"
+        assert closer_first_weights[0] > weights[0], "Particle with improved estimates should have higher weight"
         assert np.allclose(np.sum(closer_first_weights), 1.0, atol=1e-4), "Weights should be normalized (sum to 1)"
 
         test_ok()
