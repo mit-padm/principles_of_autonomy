@@ -60,7 +60,7 @@ class TestPSet9(unittest.TestCase):
     @weight(5)
     def test_05(self):
         q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
-        answer = ('B','E','G','H')
+        answer = ('B','F','G','H')
         assert len(q5_answer) == len(answer), "Incorrect number of values."
         assert set(q5_answer) == set(answer), "Incorrect values."
 
