@@ -1,296 +1,221 @@
 import unittest
-import timeout_decorator
 import numpy as np
+import timeout_decorator
 from gradescope_utils.autograder_utils.decorators import weight
 # from nose.tools import assert_equal
 
-from principles_of_autonomy.grader import get_locals, compare_iterators
+from principles_of_autonomy.grader import get_locals
+import random
+import numpy as np
+import random
 
+# Function for tests
+def test_ok():
+    try:
+        from IPython.display import display_html
+        display_html("""<div class="alert alert-success">
+        <strong>Test passed!!</strong>
+        </div>""", raw=True)
+    except:
+        print("test ok!!")
 
 class TestPSet9(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    @weight(2)
+    @weight(5)
     def test_01(self):
-        t = (True, False, False, False)
         q1_answer = get_locals(self.notebook_locals, ["q1_answer"])
-        assert compare_iterators(q1_answer, t)
+        answer = 2
+        assert q1_answer == answer, "Incorrect values."
 
-    @weight(2)
-    def test_02(self):
-        t = (True, False, False, True)
-        q2_answer = get_locals(self.notebook_locals, ["q2_answer"])
-        assert compare_iterators(q2_answer, t)
-
-    @weight(2)
-    def test_03(self):
-        t = (True, False, True, False)
-        q3_answer = get_locals(self.notebook_locals, ["q3_answer"])
-        assert compare_iterators(q3_answer, t)
-
-    @weight(2)
-    def test_04(self):
-        q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
-        # old incorrect answer (origin is included)
-        t_old = (True, True, False, False)
-        # true answer
-        t = (True, False, False, True)
-        # accept the old answer for backwards compatibility
-        assert compare_iterators(q4_answer, t) or compare_iterators(q4_answer, t_old)
-
-    @weight(2)
-    def test_05(self):
-        t = (False, True, False, False)
-        q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
-        assert compare_iterators(q5_answer, t)
-
-    # 1.2
-    @weight(2)
-    def test_06(self):
-        t = [-3, -5]
-        obj_simple = get_locals(self.notebook_locals, ["obj_simple"])
-        assert compare_iterators(obj_simple, t)
-
-    @weight(2)
-    def test_07(self):
-        t = [[1, 0], [0, 2], [3, 2]]
-        lhs_simple = get_locals(self.notebook_locals, ["lhs_simple"])
-        assert compare_iterators(lhs_simple, t)
-
-    @weight(2)
-    def test_08(self):
-        t = [4, 12, 18]
-        rhs_simple = get_locals(self.notebook_locals, ["rhs_simple"])
-        assert compare_iterators(rhs_simple, t)
-
-    @weight(4)
-    def test_09(self):
-        dec_vars, opt = get_locals(self.notebook_locals, [
-                                   "decision_variables_simple", "optimum_simple"])
-        dec_vars_ans = [2., 6.]
-        opt_ans = 36
-        assert np.allclose(dec_vars, dec_vars_ans)
-        assert np.allclose(opt, opt_ans)
-
-    # 1.3
-    @weight(2)
-    def test_10(self):
-        obj = get_locals(self.notebook_locals, ["obj_image"])
-        t = [-20, -12, -30, -15]
-        assert compare_iterators(t, obj)
-
-    @weight(2)
-    def test_11(self):
-        lhs = get_locals(self.notebook_locals, ["lhs_image"])
-        t = [[1, 1, 1, 1], [3, 2, 2, 0], [0, 1, 5, 3]]
-        assert compare_iterators(t, lhs)
-
-    @weight(2)
-    def test_12(self):
-        rhs = get_locals(self.notebook_locals, ["rhs_image"])
-        t = [50, 100, 100]
-        assert compare_iterators(t, rhs)
-
-    @weight(4)
-    def test_13(self):
-        lp_soln = get_locals(self.notebook_locals, ["lp_soln_image"])
-        x_soln = [25., 0., 12.5, 12.5]
-        fun_soln = 1062.5
-        assert np.allclose(lp_soln.x, x_soln)
-        assert np.allclose(-lp_soln.fun, fun_soln)
-
-    @weight(2)
-    def test_14(self):
-        image2 = get_locals(self.notebook_locals, ["image2"])
-        image2_soln = 0
-        assert np.allclose(image2, image2_soln)
-
-    @weight(2)
-    def test_15(self):
-        utility = get_locals(self.notebook_locals, ["utility_image"])
-        utility_soln = 1062.5
-        assert np.allclose(utility, utility_soln)
-
-    @weight(2)
-    def test_16(self):
-        max_utility_camera = get_locals(
-            self.notebook_locals, ["max_utility_camera"])
-        max_utility_soln = 0
-        assert np.allclose(max_utility_camera, max_utility_soln)
-
-    # @weight(4)
-    # def test_17(self):
-    #     lp_soln_full_image = get_locals(
-    #         self.notebook_locals, ["lp_soln_full_image"])
-    #     x_ans = [23.3333, 0., 11.5, 11.1666]
-    #     fun_ans = 979.1666
-    #     assert np.allclose(lp_soln_full_image.x, x_ans, rtol=1e-3)
-    #     assert np.allclose(-lp_soln_full_image.fun, fun_ans, rtol=1e-3)
-
-    @weight(2)
-    def test_18(self):
-        utility_new = get_locals(self.notebook_locals, ["utility_new"])
-        u_ans = 1056.1666
-        assert np.allclose(utility_new, u_ans, rtol=1e-3)
-
-    @weight(2)
-    def test_19(self):
-        change = get_locals(self.notebook_locals, ["change_image"])
-        change_ans = 'down'
-        assert hash(change.strip().lower()) == hash(change_ans)
-
-    # 2.1
-    @weight(4)
-    def test_20(self):
-        lp_soln_knapsack_no_enforce = get_locals(
-            self.notebook_locals, ["lp_soln_knapsack_no_enforce"])
-        x_ans = [0, 1, 1, 1, 0]
-        fun_ans = 32
-        assert np.allclose(lp_soln_knapsack_no_enforce.x, x_ans, rtol=1e-3)
-        assert np.allclose(-lp_soln_knapsack_no_enforce.fun,
-                           fun_ans, rtol=1e-3)
-
-    @weight(2)
-    def test_21(self):
-        num_items = get_locals(self.notebook_locals, ["num_items"])
-        ans = 3
-        assert num_items == ans
-
-    @weight(2)
-    def test_22(self):
-        weight_initial = get_locals(self.notebook_locals, ["weight_initial"])
-        ans = 15
-        assert np.allclose(weight_initial, ans, rtol=1e-3)
-
-    @weight(4)
-    def test_23(self):
-        lp_soln_updated = get_locals(self.notebook_locals, ["lp_soln_updated"])
-        x_ans = [1, 1, 1, 0.375, 0]
-        fun_ans = 31.25
-        assert np.allclose(lp_soln_updated.x, x_ans, rtol=1e-3)
-        assert np.allclose(-lp_soln_updated.fun, fun_ans, rtol=1e-3)
-
-    @weight(2)
-    def test_24(self):
-        weight_no_longer_linear = get_locals(
-            self.notebook_locals, ["weight_no_longer_linear"])
-        ans = 15
-        assert np.allclose(weight_no_longer_linear, ans, rtol=1e-3)
-
-    @weight(2)
-    def test_25(self):
-        value_no_longer_linear = get_locals(
-            self.notebook_locals, ["value_no_longer_linear"])
-        ans = 31.25
-        assert np.allclose(value_no_longer_linear, ans, rtol=1e-3)
-
-    # 2.2
-    @weight(2)
-    def test_26(self):
-        b_l = get_locals(self.notebook_locals, ["b_l_knapsack"])
-        ans = np.all(np.isinf(np.array(b_l)))
-        assert ans
-
-    # @weight(2)
-    # def test_27(self):
-    #     constraints_knapsack = get_locals(
-    #         self.notebook_locals, ["constraints_knapsack"])
-    #     lhs = [[4, 5, 3, 8, 6],
-    #            [1, 0, 0, 0, 0],
-    #            [0, 1, 0, 0, 0],
-    #            [0, 0, 1, 0, 0],
-    #            [0, 0, 0, 1, 0],
-    #            [0, 0, 0, 0, 1]]
-    #     rhs = [15, 1, 1, 1, 1, 1]
-    #     assert np.array_equal(constraints_knapsack.A, lhs)
-    #     assert np.array_equal(constraints_knapsack.ub, rhs)
-
-    @weight(2)
-    def test_28(self):
-        integrality_knapsack = get_locals(
-            self.notebook_locals, ["integrality_knapsack"])
-        obj = [-8, -12, -6, -14, -10]
-        t = np.ones_like(obj)
-        assert np.array_equal(integrality_knapsack, t)
-
-    @weight(4)
-    def test_29(self):
-        ip_soln_knapsack = get_locals(
-            self.notebook_locals, ["ip_soln_knapsack"])
-        x_soln = [1, 1, 0, 0, 1]
-        fun_soln = 30
-        assert np.array_equal(ip_soln_knapsack.x, x_soln)
-        assert np.allclose(-ip_soln_knapsack.fun, fun_soln)
-    @weight(2)
-    def test_30(self):
-        weight_ip = get_locals(
-            self.notebook_locals, ["weight_ip"])
-        s = 15
-        assert np.allclose(weight_ip, s, rtol=1e-3)
-
-    @weight(2)
-    def test_31(self):
-        change_ip = get_locals(self.notebook_locals, ["change_ip"])
-        change_ans = 'worse'
-        assert hash(change_ip.strip().lower()) == hash(change_ans)
-
-
-    #### 3.1
-    @weight(8)
-    def test_32(self):
-        image_allocation = get_locals(self.notebook_locals, ["image_allocation"])
-        a = [24, 1, 12, 13]
-        assert np.allclose(image_allocation, a, rtol=1e-3)
-
-    @weight(8)
-    def test_33(self):
-        image_allocation_relaxed = get_locals(self.notebook_locals, ["image_allocation_relaxed"])
-        a = [24.2666, 1, 12.6, 12]
-        assert np.allclose(image_allocation_relaxed, a, rtol=1e-3)
-
-    @weight(10)
-    def test_34(self):
-        image_allocation_multiple = get_locals(self.notebook_locals, ["image_allocation_multiple"])
-        a = [36, 1, 12, 1]
-        assert np.allclose(image_allocation_multiple, a, rtol=1e-3)
-
-    @weight(2)
-    def test_35(self):
-        process_location = get_locals(self.notebook_locals, ["process_location"])
-        first = 'gpu'
-        second = ['cpu', 'gpu']
-        assert process_location[0].lower() == first and process_location[1].lower() in second
-
-    @weight(2)
-    def test_36(self):
-        utility_multiple = get_locals(self.notebook_locals, ["utility_multiple"])
-        a = 1107
-        assert np.allclose(a, utility_multiple)
-
-    @weight(2)
-    def test_37(self):
-        alt, orig = get_locals(self.notebook_locals, ["alternate_solution", "process_location"])
-        assert alt is not None
-        assert not compare_iterators(alt, orig), "Same solution as before is not alternate"
-        first = 'gpu'
-        second = ['cpu', 'gpu']
-        assert alt[0].lower() == first and alt[1].lower() in second
-
-    @weight(6)
-    def test_38(self):
-        beer_order = get_locals(self.notebook_locals, ["beer_order"])
-        a = 2000
-        b = 1000
-        assert np.allclose(beer_order['regular'], a)
-        assert np.allclose(beer_order['strong'], b)
+        test_ok()
 
     @weight(5)
+    def test_02(self):
+        q2_answer = get_locals(self.notebook_locals, ["q2_answer"])
+        answer = "yes"
+        assert q2_answer.strip().lower() == answer, "Incorrect values."
+
+        test_ok()
+
+    @weight(5)
+    def test_03(self):
+        q3_answer = get_locals(self.notebook_locals, ["q3_answer"])
+        answer = "no"
+        assert q3_answer.strip().lower() == answer, "Incorrect values."
+
+        test_ok()
+
+    @weight(5)
+    def test_04(self):
+        q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
+        answer = ('D', 'I')
+        assert len(q4_answer) == len(answer), "Incorrect number of values."
+        assert set(q4_answer) == set(answer), "Incorrect values."
+
+        test_ok()
+
+    @weight(5)
+    def test_05(self):
+        q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
+        answer = ('B','E','G','H')
+        assert len(q5_answer) == len(answer), "Incorrect number of values."
+        assert set(q5_answer) == set(answer), "Incorrect values."
+
+        test_ok()
+
+
+    @weight(5)
+    def test_06(self):
+        conditioning_warmup, RV, CPT = get_locals(self.notebook_locals, 
+                                                  ["conditioning_warmup",
+                                                   "RV", "CPT"])
+        A = RV("A", [0, 1])
+        B = RV("B", [0, 1])
+        cpt = CPT(
+          rvs=[A, B],
+          table=np.array([
+            [0.98, 0.01],
+            [0.02, 0.99],
+          ])
+        )
+        cond_cpt = conditioning_warmup(cpt, B)
+        assert set(cond_cpt.rvs) == {A}, "Incorrect RVs in CPT."
+        assert cond_cpt.get((0,)) == 0.98, "Incorrect values."
+        assert cond_cpt.get((1,)) == 0.02, "Incorrect values."
+
+        test_ok()
+
+    @weight(5)
+    def test_07(self):
+        create_state_variable = get_locals(self.notebook_locals,
+                                           ["create_state_variable"])
+        map1 = [[0, 1, 0],
+            [1, 0, 0]]
+        rv = create_state_variable(map1, "current_state")
+        assert rv.name == "current_state", "Incorrect RV name." 
+        assert rv.dim == 4, "Incorrect number of values in RV's domain." 
+        assert rv.domain == [(0, 0), (0, 2), (1, 1), (1, 2)], "Incorrect RV domain." 
+
+        test_ok()
+
+    @weight(10)
+    def test_08(self):
+        create_state_variable, create_transition_cpt, CPT = \
+            get_locals(self.notebook_locals, ["create_state_variable",
+                                              "create_transition_cpt",
+                                              "CPT"])
+        map1 = [[0, 0, 0],
+            [1, 0, 1]]
+        s0 = create_state_variable(map1, "state_0")
+        s1 = create_state_variable(map1, "state_1")
+        cpt = create_transition_cpt(map1, s0, s1)
+        assert set(cpt.rvs) == {s0, s1}, "State variables not set correctly"
+        assert cpt.get_by_names({"state_0": (0, 0), "state_1": (0, 0)}) == 0.5, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 0), "state_1": (0, 1)}) == 0.5, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 0), "state_1": (1, 1)}) == 0., "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 1), "state_1": (1, 1)}) == 0.25, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 1), "state_1": (0, 1)}) == 0.25, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 1), "state_1": (0, 2)}) == 0.25, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (0, 1), "state_1": (0, 0)}) == 0.25, "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (1, 1), "state_1": (0, 0)}) == 0., "Incorrect table values."
+        assert cpt.get_by_names({"state_0": (1, 1), "state_1": (0, 1)}) == 0.5, "Incorrect table values."
+
+        test_ok()
+
+    @weight(5)
+    def test_09(self):
+        create_observation_variable, RV = \
+        get_locals(self.notebook_locals, ["create_observation_variable", "RV"])
+
+        rv = create_observation_variable("obs")
+        assert rv.name == "obs", "Incorrect RV name."
+        assert rv.dim == 2 ** 4, "Incorrect number of values in RV's domain."
+        assert set(rv.domain) == {
+            (0, 0, 0, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 1, 0, 0),
+            (0, 0, 1, 0), (1, 0, 1, 0), (0, 1, 1, 0), (1, 1, 1, 0),
+            (0, 0, 0, 1), (1, 0, 0, 1), (0, 1, 0, 1), (1, 1, 0, 1),
+            (0, 0, 1, 1), (1, 0, 1, 1), (0, 1, 1, 1), (1, 1, 1, 1),
+        }, "Incorrect RV domain."
+
+        test_ok()
+
+    @weight(25)
+    def test_10(self):
+        create_state_variable, RV, create_observation_variable, \
+        create_observation_cpt = \
+        get_locals(self.notebook_locals, ["create_state_variable", "RV",
+                                          "create_observation_variable",
+                                          "create_observation_cpt"])
+
+        map1 = [[0, 0, 0],
+            [1, 0, 1]]
+        s0 = create_state_variable(map1, "state_0")
+        z0 = create_observation_variable("obs_0")
+        cpt = create_observation_cpt(map1, s0, z0)
+        assert set(cpt.rvs) == {s0, z0}, "Incorrect RVs in the CPT"
+        assert cpt.get_by_names({"state_0": (0, 0), "obs_0": (1, 0, 1, 1)}) ==\
+                1., "Incorrect value in the CPT"
+        assert cpt.get_by_names({"state_0": (0, 0), "obs_0": (1, 1, 0, 1)}) ==\
+                0., "Incorrect value in the CPT"
+        assert cpt.get_by_names({"state_0": (0, 1), "obs_0": (1, 0, 0, 0)}) ==\
+                1., "Incorrect value in the CPT"
+        assert cpt.get_by_names({"state_0": (0, 2), "obs_0": (1, 1, 1, 0)}) ==\
+                1., "Incorrect value in the CPT"
+        assert cpt.get_by_names({"state_0": (1, 1), "obs_0": (0, 1, 1, 1)}) ==\
+                1., "Incorrect value in the CPT"
+
+        test_ok()
+
+                
+    @weight(25)
+    def test_11(self):
+        create_hmm, run_viterbi = get_locals(self.notebook_locals,
+                                             ["create_hmm", "run_viterbi"])
+
+        map1 = [[0, 0, 0],
+                [1, 0, 1]]
+        observations1 = [(1, 0, 1, 1), (1, 0, 0, 0), (1, 0, 0, 0)]
+        hmm1 = create_hmm(map1, len(observations1))
+        most_likely_states1 = run_viterbi(hmm1, observations1)
+        assert most_likely_states1 == [(0, 0), (0, 1), (0, 1)]
+
+        map2 = [[0, 0, 0, 0, 0]]
+        observations2 = [(1, 0, 1, 0), (1, 0, 1, 1), (1, 0, 1, 0),
+                         (1, 0, 1, 0), (1, 0, 1, 0), (1, 1, 1, 0)]
+        hmm2 = create_hmm(map2, len(observations2))
+        most_likely_states2 = run_viterbi(hmm2, observations2)
+        assert most_likely_states2 == [(0, 1), (0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
+
+        map3 = [[1, 1, 1, 1, 1],
+                [0, 0, 1, 0, 0],
+                [1, 0, 1, 0, 1]]
+        observations3 = [(0, 1, 1, 0), (0, 1, 1, 1), (1, 0, 0, 1), (1, 1, 1, 0)]
+        hmm3 = create_hmm(map3, len(observations3), noise_prob=0.05)
+        most_likely_states3 = run_viterbi(hmm3, observations3)
+        assert most_likely_states3 == [(2, 3), (2, 3), (1, 3), (1, 4)]
+
+        map4 = [
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [1, 0, 0, 1, 0],
+            [0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0],
+        ]
+        observations4 = [(1, 0, 1, 1), (1, 0, 0, 0), (0, 0, 0, 0), (1, 1, 0, 0)]
+        hmm4 = create_hmm(map4, len(observations4), noise_prob=0.05)
+        most_likely_states4 = run_viterbi(hmm4, observations4)
+        assert most_likely_states4 == [(3, 0), (3, 1), (3, 2), (3, 3)]
+
+        test_ok()
+        
+    @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_39_form_word(self):
+    def test_12_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("simplex".lower())
+        password_hash = hash("Kurtoskalacs".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
             return
         else:
