@@ -16,20 +16,27 @@ def replace_punctuation(text):
     return re.sub(r'[^\w\s]', ' ', text)
 
 # Function to clean SMS messages
-
-
 def clean_data(messages):
     cleaned_messages = [replace_punctuation(msg).lower() for msg in messages]
     return cleaned_messages
 
+# Function for tests
+def test_ok():
+    try:
+        from IPython.display import display_html
+        display_html("""<div class="alert alert-success">
+        <strong>Test passed!!</strong>
+        </div>""", raw=True)
+    except:
+        print("test ok!!")
 
 class TestPSet10(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    @weight(5)
-    def test_01(self):
+    @weight(10)
+    def test_01_get_counts(self):
         disgruntled_sms_messages = clean_data([
             "Why do companies keep trusting machines to make decisions about people?",
             "Another news story about an AI system failing. When will they learn?",
@@ -84,9 +91,10 @@ class TestPSet10(unittest.TestCase):
             if word_counts[k] != v:
                 raise RuntimeError(
                     f"Word {k} was miscounted in sample (should be {v} was calculated as {word_counts[k]})")
+        test_ok()
 
     @weight(10)
-    def test_02(self):
+    def test_02_learn_params(self):
         disgruntled_sms_messages = clean_data([
             "Why do companies keep trusting machines to make decisions about people?",
             "Another news story about an AI system failing. When will they learn?",
@@ -130,9 +138,10 @@ class TestPSet10(unittest.TestCase):
         six_word_value = np.log(
             6 + k) - np.log(len(disgruntled_sms_messages) + 2 * k)
         assert np.isclose(six_word_value, log_probs['to'])
+        test_ok()
 
     @weight(10)
-    def test_03(self):
+    def test_03_learn_distributions(self):
         disgruntled_sms_messages = clean_data([
             "Why do companies keep trusting machines to make decisions about people?",
             "Another news story about an AI system failing. When will they learn?",
@@ -201,9 +210,10 @@ class TestPSet10(unittest.TestCase):
             3 + k) - np.log(len(pro_ai_messages) + 2 * k)
         assert np.isclose(
             three_word_value, log_probs[1]['ai']), "log probs in ham collection are incorrect"
+        test_ok()
 
     @weight(10)
-    def test_04(self):
+    def test_04_NB_classify(self):
         professor_messages = clean_data([
             "Let's analyze this dataset using statistical methods.",
             "Remember to cite your sources in APA format.",
@@ -268,9 +278,10 @@ class TestPSet10(unittest.TestCase):
             if (student_ans == "spam" and label) or (student_ans == "ham" and not label):
                 raise AssertionError(
                     "Classifier failed on test set where it should not ")
+        test_ok()
 
-    @weight(5)
-    def test_05(self):
+    @weight(10)
+    def test_05_loss_functions(self):
         sigmoid, binary_cross_entropy, loss_gradient = get_locals(
             self.notebook_locals, ["sigmoid",
                                    "binary_cross_entropy", "loss_gradient"]
@@ -322,9 +333,10 @@ class TestPSet10(unittest.TestCase):
         student_ans = loss_gradient(train, labels, y_pred)
         assert np.allclose(
             student_ans, ans, atol=1e-4), "Calculated weights are incorrect"
+        test_ok()
 
     @weight(10)
-    def test_06(self):
+    def test_06_batch_gd(self):
         batch_gradient_descent = get_locals(
             self.notebook_locals, ["batch_gradient_descent"])
         train = np.asarray([[3.11793866e-01,  8.42014665e-01,  1.00000000e+00],
@@ -353,10 +365,10 @@ class TestPSet10(unittest.TestCase):
         out = batch_gradient_descent(train, labels, w, 0.25)
         ans = np.asarray([0.27032749, 0.84907865, 0.18623564])
         assert np.allclose(ans, out, atol=1e-4), "Batch gradient descent implementation is incorrect"
+        test_ok()
 
-
-    @weight(5)
-    def test_07(self):
+    @weight(0)
+    def test_07_NN(self):
         SimpleNN = get_locals(self.notebook_locals, ["SimpleNN"])
         inp = (12, 7, 43, 18)
         nn = SimpleNN(
@@ -370,15 +382,17 @@ class TestPSet10(unittest.TestCase):
         assert np.allclose(
             n_params, true_n_params), "Number of model parameters is incorrect (should be input_dim * output_dim + output_dim for each linear layer)"
         assert out.shape == (26, inp[-1])
+        test_ok()
 
-    @weight(10)
-    def test_08(self):
+    @weight(0)
+    def test_08_NN_multiple(self):
         ans = ('a', 'b')
         mc_answer_set_1 = get_locals(self.notebook_locals, ["mc_answer_set_1"])
         assert compare_iterators(ans, mc_answer_set_1)
+        test_ok()
 
-    @weight(5)
-    def test_09(self):
+    @weight(0)
+    def test_09_overfit(self):
         early_stopping = get_locals(self.notebook_locals, ["early_stopping"])
 
         # test best_val_update loss and counter work
@@ -411,9 +425,10 @@ class TestPSet10(unittest.TestCase):
         assert stop_training, "Training should stop when counter >= patience"
         assert np.allclose(
             post_best_val_loss, best_val_loss), "Best val loss should be maintained if not exceeded"
+        test_ok()
 
-    @weight(10)
-    def test_10(self):
+    @weight(0)
+    def test_10_overfit_choice(self):
         ans = dict(
             q1=dict(a=True, b=True, c=False),
             q2=dict(a=True, b=False, c=False),
@@ -426,12 +441,13 @@ class TestPSet10(unittest.TestCase):
             student_ans_for_q = mc_answer_set_2[k]
             for part, part_ans in v.items():
                 assert student_ans_for_q[part] == part_ans
+        test_ok()
 
     @weight(5)
     @ timeout_decorator.timeout(1.0)
     def test_11(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("ParametersAllTheWayDown".lower())
+        password_hash = hash("Sock".lower())
         if hash(word.strip().lower()) == password_hash:
             return
         else:
