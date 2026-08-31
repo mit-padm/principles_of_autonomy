@@ -1,9 +1,60 @@
 import unittest
-import numpy as np 
+from collections import deque
+
+import numpy as np
 import timeout_decorator
 from gradescope_utils.autograder_utils.decorators import weight
 
 from principles_of_autonomy.grader import get_locals
+
+# How many more states BFS must explore than DFS on the student's adversarial
+# domain. The notebook asks for DFS to be at least twice as fast, measured in
+# number of states explored.
+ADVERSARIAL_EXPANSION_RATIO = 2.0
+
+
+def reference_optimal_path_length(problem, SearchNode):
+    """Instructor BFS over the student's domain.
+
+    Returns the number of states in a shortest path from the problem's start
+    state to a goal state, or None if the domain has no solution.
+    """
+    start = problem.start
+    depth = {start: 1}
+    queue = deque([SearchNode(start)])
+    while queue:
+        node = queue.popleft()
+        if problem.test_goal(node.state):
+            return depth[node.state]
+        children = problem.expand_node(node)
+        assert isinstance(children, list), \
+            "AdversarialProblem.expand_node should return a list of SearchNodes."
+        for child in children:
+            assert hasattr(child, "state") and hasattr(child, "parent"), \
+                "AdversarialProblem.expand_node should return SearchNodes."
+            if child.state not in depth:
+                depth[child.state] = depth[node.state] + 1
+                queue.append(child)
+    return None
+
+
+def check_adversarial_path(problem, solution, SearchNode, label):
+    """Check that a returned Path really is a path from start to a goal state."""
+    assert hasattr(solution, "path"), \
+        "%s did not return a Path object as the first element of its tuple." % label
+    path = solution.path
+    assert len(path) > 0, "%s returned an empty path." % label
+    assert path[0] == problem.start, \
+        "The first state of the %s path is not the start state of the problem." % label
+    assert problem.test_goal(path[-1]), \
+        "The last state of the %s path is not a goal state." % label
+    for state, next_state in zip(path, path[1:]):
+        successors = [n.state for n in problem.expand_node(SearchNode(state))]
+        assert next_state in successors, \
+            ("The %s path takes an illegal step: %s is not a successor of %s "
+             "according to AdversarialProblem.expand_node."
+             % (label, next_state, state))
+
 
 def check_expanded_states(returned_states, correct_states):
     assert isinstance(returned_states, list), "Your function should return a list."
@@ -148,9 +199,61 @@ class TestPSet1(unittest.TestCase):
         else:
             print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
 
+    @weight(0)
+    @timeout_decorator.timeout(60.0)
+    def test_5_adversarial_bfs_vs_dfs(self):
+        (AdversarialProblem, SearchNode, breadth_first_search, depth_first_search,
+         adversarial_start, adversarial_goal) = get_locals(
+            self.notebook_locals,
+            ["AdversarialProblem", "SearchNode", "breadth_first_search",
+             "depth_first_search", "adversarial_start", "adversarial_goal"])
+
+        problem = AdversarialProblem(adversarial_start, adversarial_goal)
+
+        optimal_length = reference_optimal_path_length(problem, SearchNode)
+        assert optimal_length is not None, \
+            "Your adversarial domain has no solution, so BFS and DFS cannot be compared."
+
+        bfs_sol, bfs_num_visited, _ = breadth_first_search(problem)
+        dfs_sol, dfs_num_visited, _ = depth_first_search(problem)
+
+        assert bfs_sol is not None, \
+            "BFS did not find a solution in your adversarial domain, but one exists."
+        assert dfs_sol is not None, \
+            "DFS did not find a solution in your adversarial domain, but one exists."
+
+        check_adversarial_path(problem, bfs_sol, SearchNode, "BFS")
+        check_adversarial_path(problem, dfs_sol, SearchNode, "DFS")
+
+        # BFS must return an optimal solution.
+        assert len(bfs_sol.path) == optimal_length, \
+            ("BFS returned a path of %d states, but the shortest path in your domain "
+             "has %d states. BFS should always return an optimal solution."
+             % (len(bfs_sol.path), optimal_length))
+
+        # DFS must return a suboptimal one.
+        assert len(dfs_sol.path) > optimal_length, \
+            ("DFS returned a path of %d states, which is optimal for your domain. "
+             "Design a domain where DFS commits to a longer route to the goal."
+             % len(dfs_sol.path))
+
+        # ...and BFS must pay for that optimality by exploring more states.
+        assert bfs_num_visited >= ADVERSARIAL_EXPANSION_RATIO * dfs_num_visited, \
+            ("BFS explored %d states and DFS explored %d, so DFS was only %.2fx "
+             "faster. BFS should explore at least %.1fx as many states as DFS in "
+             "your domain."
+             % (bfs_num_visited, dfs_num_visited,
+                bfs_num_visited / dfs_num_visited if dfs_num_visited else float("inf"),
+                ADVERSARIAL_EXPANSION_RATIO))
+
+        print("BFS: %d states in the solution, %d states explored."
+              % (len(bfs_sol.path), bfs_num_visited))
+        print("DFS: %d states in the solution, %d states explored."
+              % (len(dfs_sol.path), dfs_num_visited))
+
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_5_form_word(self):
+    def test_6_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Apple Pie".lower())
         if hash(word.strip().lower()) == password_hash:
