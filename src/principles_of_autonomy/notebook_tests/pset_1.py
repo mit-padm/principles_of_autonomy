@@ -117,7 +117,7 @@ class TestPSet1(unittest.TestCase):
                             ((1, 2, 3), (8, 4, 0), (7, 6, 5)),
                             ((1, 2, 3), (0, 8, 4), (7, 6, 5))])
         
-    @weight(35)
+    @weight(27)
     @timeout_decorator.timeout(5.0)
     def test_3_bfs(self):
         PuzzleProblem, breadth_first_search, print_state = get_locals(self.notebook_locals,["PuzzleProblem", "breadth_first_search", "print_state"])
@@ -199,7 +199,7 @@ class TestPSet1(unittest.TestCase):
         else:
             print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
 
-    @weight(0)
+    @weight(4)
     @timeout_decorator.timeout(60.0)
     def test_5_adversarial_bfs_vs_dfs(self):
         (AdversarialProblem, SearchNode, breadth_first_search, depth_first_search,
