@@ -203,12 +203,18 @@ class TestPSet1(unittest.TestCase):
     @timeout_decorator.timeout(60.0)
     def test_5_adversarial_bfs_vs_dfs(self):
         (AdversarialProblem, SearchNode, breadth_first_search, depth_first_search,
-         adversarial_start, adversarial_goal) = get_locals(
+         return_adversarial_problem) = get_locals(
             self.notebook_locals,
             ["AdversarialProblem", "SearchNode", "breadth_first_search",
-             "depth_first_search", "adversarial_start", "adversarial_goal"])
+             "depth_first_search", "return_adversarial_problem"])
 
-        problem = AdversarialProblem(adversarial_start, adversarial_goal)
+        problem = return_adversarial_problem()
+        assert isinstance(problem, AdversarialProblem), \
+            ("return_adversarial_problem() should return an instance of "
+             "AdversarialProblem, but it returned %r." % (problem,))
+        assert hasattr(problem, "start") and problem.start is not None, \
+            ("The AdversarialProblem returned by return_adversarial_problem() has no "
+             "start state. Pass start and goal to the constructor.")
 
         optimal_length = reference_optimal_path_length(problem, SearchNode)
         assert optimal_length is not None, \
