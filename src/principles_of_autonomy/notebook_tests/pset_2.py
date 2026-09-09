@@ -4,10 +4,27 @@ import timeout_decorator
 from gradescope_utils.autograder_utils.decorators import weight
 import functools
 import math
+import random
 from shapely.geometry import Point, Polygon, LineString, box
+from shapely.ops import unary_union
 
 
 from principles_of_autonomy.grader import get_locals
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:  # pragma: no cover - matplotlib is present in the autograder
+    plt = None
+
+
+# Parameters of the adversarial domain of X.1. These are handed to the students
+# in the notebook and must match the numbers quoted in the X.1 prompt.
+ADVERSARIAL_BOUNDS = (-2, -3, 12, 8)
+ADVERSARIAL_RADIUS = 0.1
+ADVERSARIAL_MAX_ITER = 5000
+ADVERSARIAL_NUM_TRIALS = 10
+ADVERSARIAL_MAX_SUCCESSES = 4
+ADVERSARIAL_SEED = 16410
 
 
 def check_path(path, bounds, environment, start, radius, goal_region):
@@ -39,6 +56,74 @@ def check_path(path, bounds, environment, start, radius, goal_region):
     endx, endy = path[-1]
     assert goal_region.contains(
         Point((endx, endy))), "The end of the path should be in the goal region."
+
+
+def robot_footprint(xy, radius):
+    """The collision shape of the robot, as `collision_free` models it."""
+    return Point(xy).buffer(radius, resolution=3)
+
+
+def free_space(bounds, environment, radius):
+    """The collision free configuration space of the robot inside `bounds`.
+
+    Growing every obstacle by `radius` (the Minkowski sum of the obstacle and
+    the robot) turns collision checking of a disc into a point containment
+    test: a robot centre is collision free exactly when it lies outside the
+    grown obstacles. `resolution=3` is the same disc approximation that
+    `collision_free` and `extend` use, so this agrees with the collision model
+    the students implemented.
+    """
+    free = box(*bounds)
+    grown = [obs.buffer(radius, resolution=3) for obs in environment.obstacles]
+    if grown:
+        free = free.difference(unary_union(grown))
+    return free
+
+
+def free_space_components(free):
+    """The connected components of a free space, as a list of Polygons."""
+    if free.is_empty:
+        return []
+    if isinstance(free, Polygon):
+        return [free]
+    return [geom for geom in free.geoms if isinstance(geom, Polygon)]
+
+
+def check_path_exists(path_bounds, environment, start, radius, goal_region):
+    """Checks a collision free path exists from `start` into `goal_region`.
+
+    This is an exact geometric check on the environment itself, so it does not
+    depend on the student's `rrt` being able to find that path.
+    """
+    minx, miny, maxx, maxy = path_bounds
+    startx, starty = start
+    assert minx <= startx <= maxx and miny <= starty <= maxy, (
+        "The start %s is outside the bounds %s." % (str(start), str(path_bounds)))
+    assert goal_region.within(box(*path_bounds).buffer(1e-9)), (
+        "The goal region must lie inside the bounds %s." % str(path_bounds))
+
+    footprint = robot_footprint(start, radius)
+    for obs in environment.obstacles:
+        assert not obs.intersects(footprint), (
+            "The robot is already in collision at the start %s." % str(start))
+
+    free = free_space(path_bounds, environment, radius)
+    start_point = Point(start)
+    # The start may sit exactly on the border of the bounds, so match on
+    # distance rather than containment.
+    reachable = [comp for comp in free_space_components(free)
+                 if comp.distance(start_point) < 1e-9]
+    assert reachable, (
+        "The start %s is not in the free space of the environment." % str(start))
+    for comp in reachable:
+        if comp.intersection(goal_region).area > 0.0:
+            return
+    raise AssertionError(
+        "No collision free path exists between the start %s and the goal "
+        "region: they are in different connected components of the free "
+        "space (or the reachable part of the goal region has no area). The "
+        "domain of X.1 has to be hard for the RRT, not unsolvable."
+        % str(start))
 
 
 class TestPSet2(unittest.TestCase):
@@ -311,9 +396,84 @@ class TestPSet2(unittest.TestCase):
         )
         check_path(path, bounds, environment, start, radius, goal_region)
 
+    @weight(2)
+    @timeout_decorator.timeout(5.0)
+    def test_17_adversarial_parameters(self):
+        """X.1: the given robot radius and bounds must not be changed."""
+        radius, adv_bounds = get_locals(
+            self.notebook_locals, ["radius_adversarial", "bounds_adversarial"]
+        )
+        assert isinstance(radius, (int, float)) and np.isclose(
+            radius, ADVERSARIAL_RADIUS), (
+            "radius_adversarial must stay at %s, got %s." % (
+                ADVERSARIAL_RADIUS, str(radius)))
+        assert tuple(adv_bounds) == ADVERSARIAL_BOUNDS, (
+            "bounds_adversarial must stay at %s, got %s." % (
+                str(ADVERSARIAL_BOUNDS), str(tuple(adv_bounds))))
+
+    @weight(15)
+    @timeout_decorator.timeout(600.0)
+    def test_18_adversarial_environment(self):
+        """X.1: the domain must be solvable, in bounds, and hard for the RRT."""
+        rrt, environment, radius, adv_bounds, start, goal_region = get_locals(
+            self.notebook_locals, ["rrt", "environment_adversarial",
+                                   "radius_adversarial", "bounds_adversarial",
+                                   "start_adversarial", "goal_region_adversarial"]
+        )
+        adv_bounds = tuple(adv_bounds)
+        assert len(environment.obstacles) > 0, (
+            "adversarial.yaml doesn't define any obstacles."
+        )
+        assert isinstance(start, tuple) and len(start) == 2, (
+            "start_adversarial should be an (x, y) tuple, got %s." % str(start))
+        assert isinstance(goal_region, Polygon) and goal_region.area > 0.0, (
+            "goal_region_adversarial should be a shapely Polygon with a "
+            "non-zero area, got %s." % str(goal_region))
+
+        # Conditions 1 and 2 of X.1: a collision free path has to exist inside
+        # the given bounds. Obstacles are allowed to stick out past the bounds
+        # (sealing a passage against the border needs that); the robot never
+        # leaves the bounds, so only the free space inside them matters.
+        check_path_exists(adv_bounds, environment, start, radius, goal_region)
+
+        # Condition 3 of X.1: over ADVERSARIAL_NUM_TRIALS runs capped at
+        # ADVERSARIAL_MAX_ITER samples each, the RRT may succeed at most
+        # ADVERSARIAL_MAX_SUCCESSES times.
+        successes = 0
+        for trial in range(ADVERSARIAL_NUM_TRIALS):
+            # Seed both generators so the trials are reproducible whichever
+            # source of randomness the student's rrt draws from.
+            np.random.seed(ADVERSARIAL_SEED + trial)
+            random.seed(ADVERSARIAL_SEED + trial)
+            try:
+                path = rrt(adv_bounds, environment, start, radius, goal_region,
+                           max_iter=ADVERSARIAL_MAX_ITER)
+            except TypeError as e:
+                raise RuntimeError(
+                    "Couldn't run rrt with a max_iter of %d. Your rrt must "
+                    "accept a max_iter keyword argument and return None if no "
+                    "path was found within that many samples (%s)."
+                    % (ADVERSARIAL_MAX_ITER, str(e)))
+            finally:
+                if plt is not None:
+                    # Each rrt call opens a figure; 10 of them would pile up.
+                    plt.close("all")
+            if path is None:
+                continue
+            successes += 1
+            # A run only counts as a success if it returned a usable path.
+            check_path(path, adv_bounds, environment, start, radius, goal_region)
+
+        assert successes <= ADVERSARIAL_MAX_SUCCESSES, (
+            "Your RRT solved the adversarial domain %d out of %d times with a "
+            "budget of %d samples per run, but X.1 allows at most %d "
+            "successes. Make the domain harder." % (
+                successes, ADVERSARIAL_NUM_TRIALS, ADVERSARIAL_MAX_ITER,
+                ADVERSARIAL_MAX_SUCCESSES))
+
     @weight(5)
     @timeout_decorator.timeout(5.0)
-    def test_17_form_word(self):
+    def test_19_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Bibimbap".lower())
         if hash(word.strip().lower()) == password_hash:
