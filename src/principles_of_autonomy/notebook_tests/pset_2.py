@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover - matplotlib is present in the autograde
 
 # Parameters of the adversarial domain of X.1. These are handed to the students
 # in the notebook and must match the numbers quoted in the X.1 prompt.
-ADVERSARIAL_BOUNDS = (-2, -3, 12, 8)
+ADVERSARIAL_BOUNDS = (-2, -3, 5, 4)
 ADVERSARIAL_RADIUS = 0.1
 ADVERSARIAL_MAX_ITER = 5000
 ADVERSARIAL_NUM_TRIALS = 10
@@ -366,7 +366,7 @@ class TestPSet2(unittest.TestCase):
         
 
 
-    @weight(10)
+    @weight(6)
     @timeout_decorator.timeout(5.0)
     def test_14_simple_environment(self):
 
@@ -376,7 +376,7 @@ class TestPSet2(unittest.TestCase):
         )
         check_path(path, bounds, environment, start, radius, goal_region)
 
-    @weight(10)
+    @weight(6)
     @timeout_decorator.timeout(5.0)
     def test_15_bugtrap_environment(self):
 
@@ -396,7 +396,7 @@ class TestPSet2(unittest.TestCase):
         )
         check_path(path, bounds, environment, start, radius, goal_region)
 
-    @weight(2)
+    @weight(1)
     @timeout_decorator.timeout(5.0)
     def test_17_adversarial_parameters(self):
         """X.1: the given robot radius and bounds must not be changed."""
@@ -411,7 +411,7 @@ class TestPSet2(unittest.TestCase):
             "bounds_adversarial must stay at %s, got %s." % (
                 str(ADVERSARIAL_BOUNDS), str(tuple(adv_bounds))))
 
-    @weight(15)
+    @weight(3)
     @timeout_decorator.timeout(600.0)
     def test_18_adversarial_environment(self):
         """X.1: the domain must be solvable, in bounds, and hard for the RRT."""
