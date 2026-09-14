@@ -17,8 +17,8 @@ except ImportError:  # pragma: no cover - matplotlib is present in the autograde
     plt = None
 
 
-# Parameters of the adversarial domain of X.1. These are handed to the students
-# in the notebook and must match the numbers quoted in the X.1 prompt.
+# Parameters of the adversarial domain of 4A. These are handed to the students
+# in the notebook and must match the numbers quoted in the 4A prompt.
 ADVERSARIAL_BOUNDS = (-2, -3, 5, 4)
 ADVERSARIAL_RADIUS = 0.1
 ADVERSARIAL_MAX_ITER = 5000
@@ -122,7 +122,7 @@ def check_path_exists(path_bounds, environment, start, radius, goal_region):
         "No collision free path exists between the start %s and the goal "
         "region: they are in different connected components of the free "
         "space (or the reachable part of the goal region has no area). The "
-        "domain of X.1 has to be hard for the RRT, not unsolvable."
+        "domain of 4A has to be hard for the RRT, not unsolvable."
         % str(start))
 
 
@@ -399,7 +399,7 @@ class TestPSet2(unittest.TestCase):
     @weight(4)
     @timeout_decorator.timeout(600.0)
     def test_17_adversarial_environment(self):
-        """X.1: the domain must be solvable, in bounds, and hard for the RRT."""
+        """4A: the domain must be solvable, in bounds, and hard for the RRT."""
         rrt, environment, radius, adv_bounds, start, goal_region = get_locals(
             self.notebook_locals, ["rrt", "environment_adversarial",
                                    "radius_adversarial", "bounds_adversarial",
@@ -424,13 +424,13 @@ class TestPSet2(unittest.TestCase):
             "goal_region_adversarial should be a shapely Polygon with a "
             "non-zero area, got %s." % str(goal_region))
 
-        # Conditions 1 and 2 of X.1: a collision free path has to exist inside
+        # Conditions 1 and 2 of 4A: a collision free path has to exist inside
         # the given bounds. Obstacles are allowed to stick out past the bounds
         # (sealing a passage against the border needs that); the robot never
         # leaves the bounds, so only the free space inside them matters.
         check_path_exists(adv_bounds, environment, start, radius, goal_region)
 
-        # Condition 3 of X.1: over ADVERSARIAL_NUM_TRIALS runs capped at
+        # Condition 3 of 4A: over ADVERSARIAL_NUM_TRIALS runs capped at
         # ADVERSARIAL_MAX_ITER samples each, the RRT may succeed at most
         # ADVERSARIAL_MAX_SUCCESSES times.
         successes = 0
@@ -460,7 +460,7 @@ class TestPSet2(unittest.TestCase):
 
         assert successes <= ADVERSARIAL_MAX_SUCCESSES, (
             "Your RRT solved the adversarial domain %d out of %d times with a "
-            "budget of %d samples per run, but X.1 allows at most %d "
+            "budget of %d samples per run, but 4A allows at most %d "
             "successes. Make the domain harder." % (
                 successes, ADVERSARIAL_NUM_TRIALS, ADVERSARIAL_MAX_ITER,
                 ADVERSARIAL_MAX_SUCCESSES))
