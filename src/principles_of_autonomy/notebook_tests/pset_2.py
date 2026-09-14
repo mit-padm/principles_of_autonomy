@@ -226,7 +226,7 @@ class TestPSet2(unittest.TestCase):
         assert result[0].cost == 508, "Cost should be 508."
         assert result[0].path == ['A', 'S', 'R', 'P', 'B', 'G']
 
-    @weight(15)
+    @weight(10)
     @timeout_decorator.timeout(5.0)
     def test_08_grid_to_graph(self):
         Grid, grid_to_graph, Edge = get_locals(
