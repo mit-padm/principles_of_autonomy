@@ -396,24 +396,9 @@ class TestPSet2(unittest.TestCase):
         )
         check_path(path, bounds, environment, start, radius, goal_region)
 
-    @weight(1)
-    @timeout_decorator.timeout(5.0)
-    def test_17_adversarial_parameters(self):
-        """X.1: the given robot radius and bounds must not be changed."""
-        radius, adv_bounds = get_locals(
-            self.notebook_locals, ["radius_adversarial", "bounds_adversarial"]
-        )
-        assert isinstance(radius, (int, float)) and np.isclose(
-            radius, ADVERSARIAL_RADIUS), (
-            "radius_adversarial must stay at %s, got %s." % (
-                ADVERSARIAL_RADIUS, str(radius)))
-        assert tuple(adv_bounds) == ADVERSARIAL_BOUNDS, (
-            "bounds_adversarial must stay at %s, got %s." % (
-                str(ADVERSARIAL_BOUNDS), str(tuple(adv_bounds))))
-
-    @weight(3)
+    @weight(4)
     @timeout_decorator.timeout(600.0)
-    def test_18_adversarial_environment(self):
+    def test_17_adversarial_environment(self):
         """X.1: the domain must be solvable, in bounds, and hard for the RRT."""
         rrt, environment, radius, adv_bounds, start, goal_region = get_locals(
             self.notebook_locals, ["rrt", "environment_adversarial",
@@ -421,6 +406,15 @@ class TestPSet2(unittest.TestCase):
                                    "start_adversarial", "goal_region_adversarial"]
         )
         adv_bounds = tuple(adv_bounds)
+        # The given robot radius and bounds must not be changed: widening them
+        # would make the domain easier, which is the opposite of the exercise.
+        assert isinstance(radius, (int, float)) and np.isclose(
+            radius, ADVERSARIAL_RADIUS), (
+            "radius_adversarial must stay at %s, got %s." % (
+                ADVERSARIAL_RADIUS, str(radius)))
+        assert adv_bounds == ADVERSARIAL_BOUNDS, (
+            "bounds_adversarial must stay at %s, got %s." % (
+                str(ADVERSARIAL_BOUNDS), str(adv_bounds)))
         assert len(environment.obstacles) > 0, (
             "adversarial.yaml doesn't define any obstacles."
         )
@@ -473,7 +467,7 @@ class TestPSet2(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(5.0)
-    def test_19_form_word(self):
+    def test_18_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Wall-e".lower())
         if hash(word.strip().lower()) == password_hash:
