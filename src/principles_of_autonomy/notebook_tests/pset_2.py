@@ -475,7 +475,7 @@ class TestPSet2(unittest.TestCase):
     @timeout_decorator.timeout(5.0)
     def test_19_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
-        password_hash = hash("Bibimbap".lower())
+        password_hash = hash("Wall-e".lower())
         if hash(word.strip().lower()) == password_hash:
             return
         else:
