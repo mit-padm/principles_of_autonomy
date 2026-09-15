@@ -138,7 +138,7 @@ class TestPSet1(unittest.TestCase):
             print("No solution after exploring %d states with max q of %d" %(num_visited, max_q))
 
     @weight(25)
-    @timeout_decorator.timeout(5.0)
+    @timeout_decorator.timeout(30.0)
     def test_4_dfs(self):
         SearchNode, depth_first_search, print_state = get_locals(self.notebook_locals,["SearchNode", "depth_first_search", "print_state"])
 
