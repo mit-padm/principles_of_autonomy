@@ -358,7 +358,7 @@ class TestPSet3(unittest.TestCase):
 
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_11_form_word(self):
+    def test_15_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Optimus Prime".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
