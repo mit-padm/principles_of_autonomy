@@ -238,7 +238,7 @@ class TestPSet3(unittest.TestCase):
 
         test_ok()
 
-    @weight(30)
+    @weight(23)
     def test_07(self):
         run_inference_dpll = get_locals(self.notebook_locals,
                                            ["run_inference_dpll"])
@@ -267,7 +267,7 @@ class TestPSet3(unittest.TestCase):
 
         test_ok()
 
-    @weight(25)
+    @weight(19)
     def test_10(self):
         infer_unknown_values = get_locals(self.notebook_locals, ["infer_unknown_values"])
         assert infer_unknown_values([["U", "C", "C"], ["S", "C", "U"], ["U", "U", "C"]]) == [["C", "C", "C"], ["S", "C", "C"], ["F", "S", "C"]]
@@ -276,8 +276,8 @@ class TestPSet3(unittest.TestCase):
 
         test_ok()
 
-    # Pac-Man point allocation is TBD; these zero-point tests still provide feedback.
-    @weight(0)
+    # Pac-Man (AI-enabled): 2 points per test.
+    @weight(2)
     @timeout_decorator.timeout(20.0)
     def test_11_pacman_worlds(self):
         """test_11_pacman_worlds: Known map, uncertain initial position, unique positions, and occupancy."""
@@ -293,7 +293,7 @@ class TestPSet3(unittest.TestCase):
             _check_pacman_kb(build, grid, [], [reading], start)
         test_ok()
 
-    @weight(0)
+    @weight(2)
     @timeout_decorator.timeout(20.0)
     def test_12_pacman_sensors(self):
         """test_12_pacman_sensors: Perfect N/S/E/W readings, including false bits and boundaries."""
@@ -312,7 +312,7 @@ class TestPSet3(unittest.TestCase):
             _check_pacman_kb(build, grid, [], [reading], start)
         test_ok()
 
-    @weight(0)
+    @weight(2)
     @timeout_decorator.timeout(20.0)
     def test_13_pacman_actions(self):
         """test_13_pacman_actions: Each cardinal direction; both open moves and blocked attempts."""
@@ -335,7 +335,7 @@ class TestPSet3(unittest.TestCase):
                           (False, True, False, True), (True, True, True, False)], (0, 0))
         test_ok()
 
-    @weight(0)
+    @weight(2)
     @timeout_decorator.timeout(20.0)
     def test_14_pacman_histories(self):
         """test_14_pacman_histories: Persistent maps, unknown starts, observation timing, contradictions."""
