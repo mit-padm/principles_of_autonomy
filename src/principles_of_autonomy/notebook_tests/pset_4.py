@@ -230,6 +230,205 @@ def run_planning(domain_pddl_str,
         return plan, plan_time
     return plan
 
+# ---------- Sudoku helpers (Section 2) ----------
+
+# Thresholds for the adversarial Sudoku in 2B. The notebook asks for a puzzle with
+# a unique solution and at least 40 clues on which row-major backtracking visits
+# at least 1,000,000 nodes while row-major forward checking visits at most 20,000.
+SUDOKU_MIN_CLUES = 40
+SUDOKU_BT_MIN_STEPS = 1_000_000
+SUDOKU_FC_MAX_STEPS = 20_000
+
+# Both puzzles have unique solutions, so any valid completion is the answer.
+SUDOKU_EASY = "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+SUDOKU_MEDIUM = "200080300060070084030500209000105408000000000402706000301007040720040060004010003"
+# Two 5s in row 0: no solution.
+SUDOKU_CONFLICTING = "550000000" + "0" * 72
+
+
+def _sudoku_peers(i):
+    r, c = divmod(i, 9)
+    return [j for j in range(81) if j != i and (
+        j // 9 == r or j % 9 == c or (j // 27 == i // 27 and (j % 9) // 3 == c // 3))]
+
+
+_SUDOKU_PEERS = [_sudoku_peers(i) for i in range(81)]
+
+
+def _flatten_sudoku(grid):
+    """Validate a 9x9 grid of ints in 0..9 and return it as a flat list of 81 ints."""
+    rows = [list(row) for row in grid]
+    assert len(rows) == 9 and all(len(row) == 9 for row in rows), \
+        "A Sudoku grid must be a 9x9 array (9 rows of 9 entries)."
+    flat = []
+    for row in rows:
+        for x in row:
+            assert int(x) == x and 0 <= int(x) <= 9, \
+                "Every Sudoku entry must be an integer from 0 (empty) to 9, found %r." % (x,)
+            flat.append(int(x))
+    return flat
+
+
+def _as_grid(s):
+    return [[int(s[9 * r + c]) for c in range(9)] for r in range(9)]
+
+
+class _StepCapReached(Exception):
+    pass
+
+
+def _reference_backtracking_steps(flat, cap):
+    """Row-major backtracking on the Sudoku CSP, counting nodes like 1B.
+
+    Returns the number of nodes visited, or cap if the search is cut off there.
+    """
+    domains = [[x] if x else list(range(1, 10)) for x in flat]
+    val = [0] * 81
+    steps = [0]
+
+    def dfs(k):
+        steps[0] += 1
+        if steps[0] >= cap:
+            raise _StepCapReached
+        if k == 81:
+            return True
+        for x in domains[k]:
+            if all(val[p] != x for p in _SUDOKU_PEERS[k]):
+                val[k] = x
+                if dfs(k + 1):
+                    return True
+                val[k] = 0
+        return False
+
+    try:
+        dfs(0)
+    except _StepCapReached:
+        return cap
+    return steps[0]
+
+
+def _reference_forward_checking_steps(flat, cap):
+    """Row-major forward checking on the Sudoku CSP, counting nodes like 1C.
+
+    Returns the number of nodes visited, or cap if the search is cut off there.
+    """
+    domains = [[x] if x else list(range(1, 10)) for x in flat]
+    val = [0] * 81
+    steps = [0]
+
+    def dfs(k):
+        steps[0] += 1
+        if steps[0] >= cap:
+            raise _StepCapReached
+        if k == 81:
+            return True
+        for x in list(domains[k]):
+            if not all(val[p] != x for p in _SUDOKU_PEERS[k]):
+                continue
+            val[k] = x
+            pruned, wipeout = [], False
+            for p in _SUDOKU_PEERS[k]:
+                if not val[p] and x in domains[p]:
+                    if len(domains[p]) == 1:
+                        wipeout = True
+                        break
+                    pruned.append(p)
+            if not wipeout:
+                for p in pruned:
+                    domains[p].remove(x)
+                if dfs(k + 1):
+                    return True
+                for p in pruned:
+                    domains[p].append(x)
+            val[k] = 0
+        return False
+
+    try:
+        dfs(0)
+    except _StepCapReached:
+        return cap
+    return steps[0]
+
+
+def _count_sudoku_solutions(flat, limit=2):
+    """Count solutions up to `limit`, using bitmasks and most-constrained-cell-first."""
+    val = list(flat)
+    rows, cols, boxes = [0] * 9, [0] * 9, [0] * 9
+    for i, x in enumerate(val):
+        if x:
+            b = 1 << x
+            r, c = divmod(i, 9)
+            if (rows[r] | cols[c] | boxes[(r // 3) * 3 + c // 3]) & b:
+                return 0  # two clues conflict
+            rows[r] |= b
+            cols[c] |= b
+            boxes[(r // 3) * 3 + c // 3] |= b
+    count = [0]
+
+    def rec():
+        best, best_mask, best_size = None, 0, 10
+        for i in range(81):
+            if not val[i]:
+                r, c = divmod(i, 9)
+                mask = ~(rows[r] | cols[c] | boxes[(r // 3) * 3 + c // 3]) & 0x3FE
+                size = bin(mask).count("1")
+                if size == 0:
+                    return
+                if size < best_size:
+                    best, best_mask, best_size = i, mask, size
+        if best is None:
+            count[0] += 1
+            return
+        r, c = divmod(best, 9)
+        bx = (r // 3) * 3 + c // 3
+        while best_mask:
+            b = best_mask & -best_mask
+            best_mask ^= b
+            val[best] = b.bit_length() - 1
+            rows[r] |= b
+            cols[c] |= b
+            boxes[bx] |= b
+            rec()
+            val[best] = 0
+            rows[r] ^= b
+            cols[c] ^= b
+            boxes[bx] ^= b
+            if count[0] >= limit:
+                return
+
+    rec()
+    return count[0]
+
+
+def _check_sudoku_csp_structure(csp, flat):
+    cells = [(r, c) for r in range(9) for c in range(9)]
+    assert list(csp.variables) == cells, \
+        "csp.variables should be the 81 (row, col) tuples in row-major order: (0, 0), (0, 1), ..., (8, 8)."
+    for (r, c), x in zip(cells, flat):
+        expected = [x] if x else list(range(1, 10))
+        assert list(csp.domains[(r, c)]) == expected, \
+            "The domain of cell %r should be %r, but it is %r." % ((r, c), expected, csp.domains[(r, c)])
+    for i, cell in enumerate(cells):
+        peers = {cells[j] for j in _SUDOKU_PEERS[i]}
+        assert set(csp.neighbors[cell]) == peers, \
+            ("Cell %r should be constrained with exactly the 20 cells sharing its row, column, "
+             "or 3x3 box. Missing: %r. Unexpected: %r."
+             % (cell, sorted(peers - set(csp.neighbors[cell])), sorted(set(csp.neighbors[cell]) - peers)))
+    for i, u in enumerate(cells):
+        for j in _SUDOKU_PEERS[i]:
+            if j < i:
+                continue
+            v = cells[j]
+            between = [con for con in csp.constraints[u] if v in con.scope]
+            for x in range(1, 10):
+                for y in range(1, 10):
+                    ok = all(con.satisfied({u: x, v: y}) for con in between)
+                    assert ok == (x != y), \
+                        ("The constraints between %r and %r should allow different digits and forbid "
+                         "equal ones, but %r=%d, %r=%d is %s."
+                         % (u, v, u, x, v, y, "allowed" if ok else "forbidden"))
+
+
 # Function for tests
 def test_ok():
     try:
@@ -304,37 +503,66 @@ class TestPSet4(unittest.TestCase):
         assert solution_impossible_fc is None, "Solution incorrectly returned for impossible Australia map"
         assert steps_impossible_fc < steps_impossible_bt, "For the impossible Australia map, forward checking should explore fewer nodes than backtracking"
 
-    @weight(5)
-    def test_04(self):
-        q4_answer = get_locals(self.notebook_locals, ["q4_answer"])
-        answer = (True, True, False)
-        assert len(q4_answer) == len(answer), f"Incorrect number of values, need {len(answer)} True / False values"
-        assert q4_answer == answer, "Incorrect values."
+    @weight(3)
+    @timeout_decorator.timeout(60.0)
+    def test_04_sudoku_csp(self):
+        sudoku_csp, forward_checking_search = get_locals(
+            self.notebook_locals, ["sudoku_csp", "forward_checking_search"])
+
+        for name, puzzle in [("easy", SUDOKU_EASY), ("medium", SUDOKU_MEDIUM)]:
+            flat = _flatten_sudoku(_as_grid(puzzle))
+            csp = sudoku_csp(_as_grid(puzzle))
+            _check_sudoku_csp_structure(csp, flat)
+
+            solution, _ = forward_checking_search(csp)
+            assert solution is not None, \
+                "Forward checking found no solution for the %s test puzzle, which has one." % name
+            solved = [solution.get((r, c)) for r in range(9) for c in range(9)]
+            assert all(x == y for x, y in zip(flat, solved) if x), \
+                "The solution to the %s test puzzle changes one of its clues." % name
+            for i in range(81):
+                for j in _SUDOKU_PEERS[i]:
+                    assert solved[i] != solved[j], \
+                        "The solution to the %s test puzzle repeats a digit in a row, column, or box." % name
+
+        # The encoding should accept a numpy array as well as a list of lists.
+        flat = _flatten_sudoku(_as_grid(SUDOKU_EASY))
+        _check_sudoku_csp_structure(sudoku_csp(np.array(_as_grid(SUDOKU_EASY))), flat)
+
+        solution, _ = forward_checking_search(sudoku_csp(_as_grid(SUDOKU_CONFLICTING)))
+        assert solution is None, \
+            "A puzzle with two 5s in the same row has no solution, but a solution was returned."
 
         test_ok()
 
-    @weight(5)
-    def test_05(self):
-        q5_answer = get_locals(self.notebook_locals, ["q5_answer"])
-        answer = False
-        assert q5_answer == answer, "Incorrect values."
+    @weight(6)
+    @timeout_decorator.timeout(300.0)
+    def test_05_adversarial_sudoku(self):
+        return_adversarial_sudoku = get_locals(self.notebook_locals, ["return_adversarial_sudoku"])
+        flat = _flatten_sudoku(return_adversarial_sudoku())
 
-        test_ok()
+        clues = sum(1 for x in flat if x)
+        assert clues >= SUDOKU_MIN_CLUES, \
+            "Your puzzle has %d clues; it needs at least %d." % (clues, SUDOKU_MIN_CLUES)
 
-    @weight(5)
-    def test_06(self):
-        q6_answer = get_locals(self.notebook_locals, ["q6_answer"])
-        answer = False
-        assert q6_answer == answer, "Incorrect values."
+        n_solutions = _count_sudoku_solutions(flat, limit=2)
+        assert n_solutions == 1, \
+            ("Your puzzle has no solution." if n_solutions == 0 else
+             "Your puzzle has more than one solution; it needs exactly one.")
 
-        test_ok()
+        # Reference implementations of 1B and 1C, with the same row-major variable
+        # order, ascending value order, and node counting.
+        fc_steps = _reference_forward_checking_steps(flat, cap=SUDOKU_FC_MAX_STEPS + 1)
+        assert fc_steps <= SUDOKU_FC_MAX_STEPS, \
+            ("Forward checking visited more than %d nodes on your puzzle; it should visit at most %d."
+             % (SUDOKU_FC_MAX_STEPS, SUDOKU_FC_MAX_STEPS))
 
-    @weight(5)
-    def test_07(self):
-        q7_answer = get_locals(self.notebook_locals, ["q7_answer"])
-        answer = True
-        assert q7_answer == answer, "Incorrect values."
+        bt_steps = _reference_backtracking_steps(flat, cap=SUDOKU_BT_MIN_STEPS)
+        assert bt_steps >= SUDOKU_BT_MIN_STEPS, \
+            ("Backtracking solved your puzzle after visiting %d nodes; it should need at least %d."
+             % (bt_steps, SUDOKU_BT_MIN_STEPS))
 
+        print("Forward checking: %d nodes. Backtracking: at least %d nodes." % (fc_steps, bt_steps))
         test_ok()
 
     @weight(5)
