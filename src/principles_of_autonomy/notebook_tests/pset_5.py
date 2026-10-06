@@ -25,7 +25,7 @@ def test_ok():
 
 
 # ---------------------------------------------------------------------------
-# XA: modeling an imperfect opponent.
+# Problem 2A: modeling an imperfect opponent.
 # The student plays o (second) against a hidden x opponent. Games are played
 # with the notebook's game_state and tic_tac_toe_board classes; caches are keyed
 # by the board as a tuple of 9 symbols ('x', 'o', ' '), row by row.
@@ -33,16 +33,16 @@ def test_ok():
 import random
 from collections import Counter
 
-_XA_NUM_GAMES = 100
-_XA_SEED = 0
-_XA_MIN_WINS = 21  # "more than 20/100"; the intended model averages ~35 wins
+_2A_NUM_GAMES = 100
+_2A_SEED = 0
+_2A_MIN_WINS = 21  # "more than 20/100"; the intended model averages ~35 wins
 
 # Hidden opponent: always opens in corner 0, answers o's center with edge 5 or
 # 7, then plays perfectly, except in the two (mirror-image) positions below,
-# where with probability _XA_BLUNDER_PROB it makes a threat that forces o to
+# where with probability _2A_BLUNDER_PROB it makes a threat that forces o to
 # block into a fork.
-_XA_BLUNDER_PROB = 0.35
-_XA_TRAPS = {
+_2A_BLUNDER_PROB = 0.35
+_2A_TRAPS = {
     ('x', ' ', ' ', ' ', 'o', 'x', ' ', ' ', 'o'): 3,
     ('x', ' ', ' ', ' ', 'o', ' ', ' ', 'x', 'o'): 1,
 }
@@ -57,8 +57,8 @@ def _cell_played(state, succ):
     return next(i for i, (a, b) in enumerate(zip(state.board.moves, succ.board.moves)) if a != b)
 
 
-def _make_opponent():
-    """x's policy: maps a game_state (x to move) to the chosen successor."""
+def _make_minimax():
+    """Returns a cached function mapping a game_state to its MiniMax value."""
     cache = {}
 
     def minimax(state):
@@ -71,6 +71,13 @@ def _make_opponent():
                 cache[k] = max(vals) if state.player == 1 else min(vals)
         return cache[k]
 
+    return minimax
+
+
+def _make_opponent():
+    """x's policy: maps a game_state (x to move) to the chosen successor."""
+    minimax = _make_minimax()
+
     def move(state, rng):
         succs = state.successors()
         cells = [_cell_played(state, s) for s in succs]
@@ -79,8 +86,8 @@ def _make_opponent():
             return succs[cells.index(0)]
         if b.count(' ') == 7 and b[0] == 'x' and b[4] == 'o':
             return succs[cells.index(rng.choice([5, 7]))]
-        if b in _XA_TRAPS and rng.random() < _XA_BLUNDER_PROB:
-            return succs[cells.index(_XA_TRAPS[b])]
+        if b in _2A_TRAPS and rng.random() < _2A_BLUNDER_PROB:
+            return succs[cells.index(_2A_TRAPS[b])]
         vals = [minimax(s) for s in succs]
         return rng.choice([s for s, v in zip(succs, vals) if v == max(vals)])
 
@@ -151,7 +158,7 @@ def _format_games(games):
     """Every game in the order played, one per line, for pasting into an LLM."""
     num_wins = sum(result == 'win' for _, result in games)
     lines = [
-        f"You (O) won {num_wins} of {len(games)} games (need more than {_XA_MIN_WINS - 1}).",
+        f"You (O) won {num_wins} of {len(games)} games (need more than {_2A_MIN_WINS - 1}).",
         "Cells are numbered row by row: 0 1 2 / 3 4 5 / 6 7 8. X (opponent) moves first; you are O.",
         "game  result  moves",
     ]
@@ -400,22 +407,22 @@ class TestPSet5(unittest.TestCase):
 
         test_ok()
 
-    @weight(10)  # TODO: points for XA are still undecided
+    @weight(10)  # TODO: points for 2A are still undecided
     @timeout_decorator.timeout(120.0)
-    def test_xa_opponent_model(self):
+    def test_4_opponent_model(self):
         opponent_model, game_state, tic_tac_toe_board = get_locals(
             self.notebook_locals, ["opponent_model", "game_state", "tic_tac_toe_board"])
         policy = _make_student_policy(opponent_model, game_state, tic_tac_toe_board)
-        games = _play_games(policy, game_state, tic_tac_toe_board, _XA_NUM_GAMES, _XA_SEED)
+        games = _play_games(policy, game_state, tic_tac_toe_board, _2A_NUM_GAMES, _2A_SEED)
         print(_format_games(games))
         tally = Counter(r for _, r in games)
-        assert tally['win'] >= _XA_MIN_WINS, \
-            f"Won {tally['win']}/{_XA_NUM_GAMES} games; need more than {_XA_MIN_WINS - 1}. See the games listed above."
+        assert tally['win'] >= _2A_MIN_WINS, \
+            f"Won {tally['win']}/{_2A_NUM_GAMES} games; need more than {_2A_MIN_WINS - 1}. See the games listed above."
         test_ok()
 
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_4_form_word(self):
+    def test_5_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Eomuktang".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
