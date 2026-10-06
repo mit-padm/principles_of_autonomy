@@ -26,14 +26,13 @@ def test_ok():
 
 # ---------------------------------------------------------------------------
 # XA: modeling an imperfect opponent.
-# The student plays o (second) against a hidden x opponent. Boards are tuples
-# of 9 symbols ('x', 'o', ' '), row by row.
+# The student plays o (second) against a hidden x opponent. Games are played
+# with the notebook's game_state and tic_tac_toe_board classes; caches are keyed
+# by the board as a tuple of 9 symbols ('x', 'o', ' '), row by row.
 # ---------------------------------------------------------------------------
 import random
 from collections import Counter
-from functools import lru_cache
 
-_WIN_LINES = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
 _XA_NUM_GAMES = 100
 _XA_SEED = 0
 _XA_MIN_WINS = 21  # "more than 20/100"; the intended model averages ~35 wins
@@ -49,99 +48,97 @@ _XA_TRAPS = {
 }
 
 
-def _winner(b):
-    for i, j, k in _WIN_LINES:
-        if b[i] != ' ' and b[i] == b[j] == b[k]:
-            return b[i]
-    return None
+def _key(state):
+    return tuple(state.board.moves)
 
 
-def _empty(b):
-    return [i for i in range(9) if b[i] == ' ']
+def _cell_played(state, succ):
+    """The cell that differs between a state and one of its successors."""
+    return next(i for i, (a, b) in enumerate(zip(state.board.moves, succ.board.moves)) if a != b)
 
 
-def _is_terminal(b):
-    return _winner(b) is not None or ' ' not in b
+def _make_opponent():
+    """x's policy: maps a game_state (x to move) to the chosen successor."""
+    cache = {}
 
+    def minimax(state):
+        k = _key(state)
+        if k not in cache:
+            if state.terminal_check():
+                cache[k] = state.score()
+            else:
+                vals = [minimax(s) for s in state.successors()]
+                cache[k] = max(vals) if state.player == 1 else min(vals)
+        return cache[k]
 
-def _final_score(b):
-    w = _winner(b)
-    return 1 if w == 'x' else -1 if w == 'o' else 0
+    def move(state, rng):
+        succs = state.successors()
+        cells = [_cell_played(state, s) for s in succs]
+        b = _key(state)
+        if b.count(' ') == 9:
+            return succs[cells.index(0)]
+        if b.count(' ') == 7 and b[0] == 'x' and b[4] == 'o':
+            return succs[cells.index(rng.choice([5, 7]))]
+        if b in _XA_TRAPS and rng.random() < _XA_BLUNDER_PROB:
+            return succs[cells.index(_XA_TRAPS[b])]
+        vals = [minimax(s) for s in succs]
+        return rng.choice([s for s, v in zip(succs, vals) if v == max(vals)])
 
-
-def _x_to_move(b):
-    return b.count('x') == b.count('o')
-
-
-def _play(b, i):
-    return b[:i] + ('x' if _x_to_move(b) else 'o',) + b[i + 1:]
-
-
-@lru_cache(maxsize=None)
-def _value(b):
-    if _is_terminal(b):
-        return _final_score(b)
-    vals = [_value(_play(b, i)) for i in _empty(b)]
-    return max(vals) if _x_to_move(b) else min(vals)
-
-
-def _opponent_move(b, rng):
-    num_moves = 9 - len(_empty(b))
-    if num_moves == 0:
-        return 0
-    if num_moves == 2 and b[0] == 'x' and b[4] == 'o':
-        return rng.choice([5, 7])
-    if b in _XA_TRAPS and rng.random() < _XA_BLUNDER_PROB:
-        return _XA_TRAPS[b]
-    moves = _empty(b)
-    best = max(_value(_play(b, i)) for i in moves)
-    return rng.choice([i for i in moves if _value(_play(b, i)) == best])
+    return move
 
 
 def _make_student_policy(opponent_model, game_state, tic_tac_toe_board):
     """o's policy: expectimax where x nodes are weighted by the student's model
     and o minimizes. Ties go to the lowest-numbered cell (the first successor)."""
+    model_cache, value_cache = {}, {}
 
-    @lru_cache(maxsize=None)
-    def model(b):
-        state = game_state(tic_tac_toe_board(list(b)))
+    def model(state):
+        b = _key(state)
+        if b not in model_cache:
+            # The student's model sees the board alone: no parent, player 1 (x to move).
+            fresh = game_state(tic_tac_toe_board(list(b)))
+            succs = fresh.successors()
+            probs = list(opponent_model(fresh))
+            board_str = list(b)
+            assert len(probs) == len(succs), \
+                f"opponent_model returned {len(probs)} probabilities for {board_str}, which has {len(succs)} successors."
+            assert all(p >= 0 for p in probs), f"opponent_model returned a negative probability for {board_str}: {probs}"
+            assert abs(sum(probs) - 1) < 1e-6, f"opponent_model probabilities for {board_str} sum to {sum(probs)}, not 1."
+            model_cache[b] = list(zip(succs, probs))
+        return model_cache[b]
+
+    def value(state):
+        b = _key(state)
+        if b not in value_cache:
+            if state.terminal_check():
+                value_cache[b] = state.score()
+            elif state.player == 1:
+                value_cache[b] = sum(p * value(s) for s, p in model(state))
+            else:
+                value_cache[b] = min(value(s) for s in state.successors())
+        return value_cache[b]
+
+    def policy(state):
         succs = state.successors()
-        probs = list(opponent_model(state))
-        board_str = list(b)
-        assert len(probs) == len(succs), \
-            f"opponent_model returned {len(probs)} probabilities for {board_str}, which has {len(succs)} successors."
-        assert all(p >= 0 for p in probs), f"opponent_model returned a negative probability for {board_str}: {probs}"
-        assert abs(sum(probs) - 1) < 1e-6, f"opponent_model probabilities for {board_str} sum to {sum(probs)}, not 1."
-        return [(tuple(s.board.moves), p) for s, p in zip(succs, probs)]
-
-    @lru_cache(maxsize=None)
-    def value(b):
-        if _is_terminal(b):
-            return _final_score(b)
-        if _x_to_move(b):
-            return sum(p * value(s) for s, p in model(b))
-        return min(value(_play(b, i)) for i in _empty(b))
-
-    def policy(b):
-        moves = _empty(b)
-        vals = [value(_play(b, i)) for i in moves]
+        vals = [value(s) for s in succs]
         best = min(vals)
-        return next(i for i, v in zip(moves, vals) if v <= best + 1e-9)
+        return next(s for s, v in zip(succs, vals) if v <= best + 1e-9)
 
     return policy
 
 
-def _play_games(policy, num_games, seed):
+def _play_games(policy, game_state, tic_tac_toe_board, num_games, seed):
     """Returns a list of (moves, result) where moves are cell indices, x first."""
     rng = random.Random(seed)
+    opponent = _make_opponent()
     games = []
     for _ in range(num_games):
-        b, moves = (' ',) * 9, []
-        while not _is_terminal(b):
-            i = _opponent_move(b, rng) if _x_to_move(b) else policy(b)
-            moves.append(i)
-            b = _play(b, i)
-        result = {1: 'loss', 0: 'tie', -1: 'win'}[_final_score(b)]
+        state, moves = game_state(tic_tac_toe_board([' '] * 9)), []
+        while not state.terminal_check():
+            succ = opponent(state, rng) if state.player == 1 else policy(state)
+            moves.append(_cell_played(state, succ))
+            state = succ
+        result = {1: 'loss', 0: 'tie', -1: 'win'}[state.score()]
         games.append((tuple(moves), result))
     return games
 
@@ -409,7 +406,7 @@ class TestPSet5(unittest.TestCase):
         opponent_model, game_state, tic_tac_toe_board = get_locals(
             self.notebook_locals, ["opponent_model", "game_state", "tic_tac_toe_board"])
         policy = _make_student_policy(opponent_model, game_state, tic_tac_toe_board)
-        games = _play_games(policy, _XA_NUM_GAMES, _XA_SEED)
+        games = _play_games(policy, game_state, tic_tac_toe_board, _XA_NUM_GAMES, _XA_SEED)
         print(_format_games(games))
         tally = Counter(r for _, r in games)
         assert tally['win'] >= _XA_MIN_WINS, \
