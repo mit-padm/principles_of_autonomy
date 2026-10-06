@@ -172,7 +172,7 @@ class TestPSet5(unittest.TestCase):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    @weight(50)
+    @weight(35)
     def test_1_minimax(self):
         fmin, fmax, game_state, tic_tac_toe_board = get_locals(
             self.notebook_locals, ["minimize_score", "maximize_score", "game_state", "tic_tac_toe_board"])
@@ -407,7 +407,7 @@ class TestPSet5(unittest.TestCase):
 
         test_ok()
 
-    @weight(10)  # TODO: points for 2A are still undecided
+    @weight(5)
     @timeout_decorator.timeout(120.0)
     def test_4_opponent_model(self):
         opponent_model, game_state, tic_tac_toe_board = get_locals(
