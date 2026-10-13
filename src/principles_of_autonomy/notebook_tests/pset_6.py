@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import timeout_decorator
+import networkx as nx
 from gradescope_utils.autograder_utils.decorators import weight
 # from nose.tools import assert_equal
 
@@ -116,6 +117,64 @@ def build_mdp(n, p, obstacles, goal, gamma, goal_reward=100, obstacle_reward=-10
                     
     mdp = MDP(S, actions, T, R, gamma)
     return mdp
+
+# Problem 3A: settings the graph MDPs must be built with
+_3A_NUM_STATES = 64
+_3A_NUM_ACTIONS = 63
+_3A_P = 0.8
+_3A_GAMMA = 0.95
+_3A_GOAL_REWARD = 100
+_3A_EPSILON = 1e-3
+_3A_MIN_RATIO = 5
+
+def _vi_iterations(mdp, epsilon):
+    """Number of value iteration sweeps until no value changes by more than epsilon."""
+    V = {s: 0.0 for s in mdp.S}
+    i = 0
+    while True:
+        Vnew = {s: max(sum(p * (mdp.R[s][a].get(sdest, 0.0) + mdp.gamma * V[sdest])
+                           for sdest, p in mdp.T[s][a].items())
+                       for a in mdp.A)
+                for s in mdp.S}
+        i += 1
+        if all(abs(Vnew[s] - V[s]) <= epsilon for s in mdp.S):
+            return i
+        V = Vnew
+
+def _check_graph_mdp(mdp, name):
+    """Check that mdp is what build_graph_mdp(G, goal, _3A_P, _3A_GAMMA) gives for a connected graph G."""
+    assert len(mdp.S) == _3A_NUM_STATES, f"{name} has {len(mdp.S)} states, but it should have {_3A_NUM_STATES}."
+    assert len(mdp.A) == _3A_NUM_ACTIONS, f"{name} has {len(mdp.A)} actions, but it should have {_3A_NUM_ACTIONS}."
+    assert abs(mdp.gamma - _3A_GAMMA) < 1e-9, f"{name} has gamma={mdp.gamma}, but it should have gamma={_3A_GAMMA}."
+    G = nx.Graph()
+    G.add_nodes_from(mdp.S)
+    for a in mdp.A:
+        assert isinstance(a, tuple) and len(a) == 2 and a[0] in mdp.S and a[1] in mdp.S and a[0] != a[1], \
+            f"Action {a} of {name} is not an edge between two different states. Build your MDPs with build_graph_mdp."
+        G.add_edge(*a)
+    assert G.number_of_edges() == _3A_NUM_ACTIONS, f"{name} uses the same edge for more than one action."
+    assert nx.is_connected(G), f"The graph of {name} is not connected."
+
+    goals = {sdest for s in mdp.S for a in mdp.A for sdest, r in mdp.R[s][a].items() if r != 0}
+    assert len(goals) == 1, f"{name} should reward arriving at exactly one goal state, but it rewards arriving at {len(goals)}."
+    goal = goals.pop()
+
+    for s in mdp.S:
+        for a in mdp.A:
+            if s == goal or s not in a:
+                expected = {s: 1.0}
+            else:
+                dest = a[1] if s == a[0] else a[0]
+                expected = {dest: _3A_P, s: 1.0 - _3A_P}
+            actual = {sdest: p for sdest, p in mdp.T[s][a].items() if p > 0}
+            expected = {sdest: p for sdest, p in expected.items() if p > 0}
+            assert actual.keys() == expected.keys() and all(abs(actual[k] - expected[k]) < 1e-9 for k in expected), \
+                f"The transitions of {name} from state {s} under action {a} are {mdp.T[s][a]}, but should be { {k: round(v, 6) for k, v in expected.items()} }. Build your MDPs with build_graph_mdp and p={_3A_P}."
+            for sdest in actual:
+                r = mdp.R[s][a].get(sdest, 0.0)
+                r_expected = _3A_GOAL_REWARD if sdest == goal and s != goal else 0.0
+                assert abs(r - r_expected) < 1e-9, \
+                    f"{name} gives reward {r} for moving from {s} to {sdest}, but it should give {r_expected}."
 
 # Function for tests
 def test_ok():
@@ -448,9 +507,25 @@ class TestPSet6(unittest.TestCase):
 
         test_ok()
 
+    # problem 3
+    @weight(5)
+    @timeout_decorator.timeout(60.0)
+    def test_8_graph_mdp_convergence(self):
+        f_build = get_locals(self.notebook_locals, ["build_fast_and_slow_mdps"])
+        fast_mdp, slow_mdp = f_build()
+        _check_graph_mdp(fast_mdp, "fast_mdp")
+        _check_graph_mdp(slow_mdp, "slow_mdp")
+        fast_iters = _vi_iterations(fast_mdp, _3A_EPSILON)
+        slow_iters = _vi_iterations(slow_mdp, _3A_EPSILON)
+        print(f"Value iteration took {fast_iters} iterations on fast_mdp and {slow_iters} iterations on slow_mdp.")
+        assert slow_iters >= _3A_MIN_RATIO * fast_iters, \
+            f"Value iteration should take at least {_3A_MIN_RATIO} times as many iterations on slow_mdp as on fast_mdp, but took {slow_iters} vs {fast_iters}."
+
+        test_ok()
+
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_8_form_word(self):
+    def test_9_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Frigarui".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
