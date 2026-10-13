@@ -191,7 +191,7 @@ class TestPSet6(unittest.TestCase):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    # problem 1, total score 60
+    # problem 1, total score 45
     @weight(5)
     @timeout_decorator.timeout(5.0)
     def test_1_convergence(self):
@@ -229,7 +229,7 @@ class TestPSet6(unittest.TestCase):
 
         test_ok()
 
-    @weight(25)
+    @weight(20)
     @timeout_decorator.timeout(5.0)
     def test_2_value_iteration(self):
         f_value_iteration = get_locals(self.notebook_locals, ["value_iteration"])
@@ -311,7 +311,7 @@ class TestPSet6(unittest.TestCase):
         
         test_ok()
 
-    @weight(15)
+    @weight(10)
     @timeout_decorator.timeout(5.0)
     def test_3_extract_policy(self):
         f_value_iteration, f_extract_policy = get_locals(self.notebook_locals, ["value_iteration", "extract_policy"])
@@ -377,7 +377,7 @@ class TestPSet6(unittest.TestCase):
         test_ok()
 
 
-    @weight(10)
+    @weight(5)
     @timeout_decorator.timeout(5.0)
     def test_4_observations(self):
         answer = get_locals(self.notebook_locals, ["answer"])
@@ -507,7 +507,7 @@ class TestPSet6(unittest.TestCase):
 
         test_ok()
 
-    # problem 3
+    # problem 3, total score 10 (3B is graded by hand)
     @weight(5)
     @timeout_decorator.timeout(60.0)
     def test_8_graph_mdp_convergence(self):
