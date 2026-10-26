@@ -395,7 +395,7 @@ class TestPSet7(unittest.TestCase):
         super().__init__(test_name)
         self.notebook_locals = notebook_locals
 
-    @weight(20)
+    @weight(15)
     @timeout_decorator.timeout(120.0)
     def test_1_direct_evaluation(self):
         direct_evaluation = get_locals(
@@ -434,7 +434,7 @@ class TestPSet7(unittest.TestCase):
 
         test_ok()
 
-    @weight(20)
+    @weight(15)
     @timeout_decorator.timeout(120.0)
     def test_2_TD_learning(self):
         td_learning = get_locals(
@@ -474,7 +474,7 @@ class TestPSet7(unittest.TestCase):
 
         test_ok()
 
-    @weight(20)
+    @weight(15)
     @timeout_decorator.timeout(120.0)
     def test_3_Q_learning(self):
         random.seed(0)
@@ -572,7 +572,7 @@ class TestPSet7(unittest.TestCase):
 
         test_ok()
 
-    @weight(0)
+    @weight(5)
     @timeout_decorator.timeout(120.0)
     def test_5_exploration_mdp(self):
         build_exploration_mdp = get_locals(self.notebook_locals, ["build_exploration_mdp"])
