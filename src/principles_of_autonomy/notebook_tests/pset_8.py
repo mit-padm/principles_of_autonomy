@@ -149,7 +149,7 @@ class TestPSet8(unittest.TestCase):
 
         test_ok()
 
-    @weight(5)
+    @weight(2)
     def test_07(self):
         q7_answer = get_locals(self.notebook_locals, ["q7_answer"])
         answer = 8
@@ -158,7 +158,7 @@ class TestPSet8(unittest.TestCase):
 
         test_ok()
 
-    @weight(5)
+    @weight(4)
     def test_08(self):
         q8_answer = get_locals(self.notebook_locals, ["q8_answer"])
         answer = 0.0005
@@ -168,7 +168,7 @@ class TestPSet8(unittest.TestCase):
         
         test_ok()
 
-    @weight(5)
+    @weight(4)
     def test_09(self):
         q9_answer = get_locals(self.notebook_locals, ["q9_answer"])
         answer = 0.07781
@@ -256,7 +256,7 @@ class TestPSet8(unittest.TestCase):
         test_ok()
 
 
-    @weight(10)
+    @weight(6)
     def test_16_BN_multiply(self):
         multiply_tables, RV, CPT = get_locals(
             self.notebook_locals, ["multiply_tables", "RV", "CPT"])
@@ -281,7 +281,7 @@ class TestPSet8(unittest.TestCase):
         test_ok()
 
 
-    @weight(5)
+    @weight(4)
     def test_17_BN_marginalize(self):
         marginalize, RV, CPT = get_locals(
             self.notebook_locals, ["marginalize", "RV", "CPT"])
