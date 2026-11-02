@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 import numpy as np
 import timeout_decorator
@@ -7,6 +8,65 @@ from principles_of_autonomy.grader import get_locals
 import random
 import numpy as np
 import random
+
+# Problem 4: the fewest-edge Bayes net for the joint in hidden_joint.npy.
+# Only the joint's hash and the minimum edge count live here, not the answer.
+_HIDDEN_JOINT_SHA256 = "7cab9bd34e733b1aee8040266faa014280116c36c13932e26fe6519cb81766e8"
+_HIDDEN_JOINT_MIN_EDGES = 12
+# A correct net leaves ~1e-16 of dependence unexplained; leaving out any needed edge leaves >= ~1e-3.
+_HIDDEN_JOINT_TOL = 1e-8
+
+
+def _check_edge_list(edges, names):
+    """Validate a student's edge list and return it as a list of (parent, child) name pairs."""
+    assert isinstance(edges, (list, tuple, set)), \
+        f"q19_answer should be a list of (parent, child) tuples, not {type(edges).__name__}."
+    checked = []
+    for edge in edges:
+        assert isinstance(edge, (list, tuple)) and len(edge) == 2, \
+            f"Each edge should be a (parent, child) tuple of variable names, but got {edge!r}."
+        parent, child = edge
+        assert parent in names and child in names, \
+            f"Edge {edge!r} uses a name that is not one of the variables {names}."
+        assert parent != child, f"Edge {edge!r} is a self-loop."
+        checked.append((parent, child))
+    assert len(set(checked)) == len(checked), "Your edge list contains a duplicate edge."
+    return checked
+
+
+def _topological_order(names, edges):
+    """Order the variables so every parent comes before its children (fails on a cycle)."""
+    parents = {x: {p for p, c in edges if c == x} for x in names}
+    order = []
+    while len(order) < len(names):
+        ready = [x for x in names if x not in order and parents[x] <= set(order)]
+        assert ready, ("Your edges contain a cycle, so they are not a Bayes net. "
+                       f"These variables are on or after a cycle: {[x for x in names if x not in order]}.")
+        order.append(ready[0])
+    return order
+
+
+def _missing_dependence(table, names, edges, order):
+    """For each X, I(X; earlier variables | parents(X)) under `order`.
+
+    These terms sum to the KL divergence from the joint to the product of P(X | parents(X)),
+    so they are all ~0 exactly when the net represents the joint.
+    """
+    def entropy(variables):
+        if not variables:
+            return 0.0
+        axes = tuple(i for i, x in enumerate(names) if x not in variables)
+        p = table.sum(axis=axes).ravel()
+        p = p[p > 0]
+        return float(-(p * np.log(p)).sum())
+
+    terms = {}
+    for i, x in enumerate(order):
+        parents = {p for p, c in edges if c == x}
+        earlier = set(order[:i])
+        terms[x] = (entropy(parents | {x}) - entropy(parents)
+                    - entropy(earlier | {x}) + entropy(earlier))
+    return terms
 
 # Function for tests
 def test_ok():
@@ -254,10 +314,36 @@ class TestPSet8(unittest.TestCase):
 
         test_ok()
 
-        
+
+    @weight(5)
+    @timeout_decorator.timeout(10.0)
+    def test_19_minimal_bn(self):
+        hidden_joint, q19_answer = get_locals(
+            self.notebook_locals, ["hidden_joint", "q19_answer"])
+        table = np.ascontiguousarray(hidden_joint.table, dtype=np.float64)
+        assert hashlib.sha256(table.tobytes()).hexdigest() == _HIDDEN_JOINT_SHA256, \
+            "hidden_joint has been changed. Reload it from the provided hidden_joint.npy."
+        names = [rv.name for rv in hidden_joint.rvs]
+
+        edges = _check_edge_list(q19_answer, names)
+        order = _topological_order(names, edges)
+
+        terms = _missing_dependence(table, names, edges, order)
+        wrong = [x for x in order if terms[x] > _HIDDEN_JOINT_TOL]
+        assert not wrong, (
+            "Your Bayes net cannot represent hidden_joint: multiplying P(X | parents(X)) together "
+            f"does not give back the joint (KL divergence {sum(terms.values()):.2e}). Going through the "
+            f"variables in the order {order}, these depend on earlier variables beyond their parents: {wrong}.")
+        assert len(edges) <= _HIDDEN_JOINT_MIN_EDGES, (
+            f"Your Bayes net represents hidden_joint, but it has {len(edges)} edges; "
+            f"one with {_HIDDEN_JOINT_MIN_EDGES} edges exists.")
+
+        test_ok()
+
+
     @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_19_form_word(self):
+    def test_20_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Hotteok".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
