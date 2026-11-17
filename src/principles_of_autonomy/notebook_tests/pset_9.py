@@ -19,6 +19,109 @@ def test_ok():
     except:
         print("test ok!!")
 
+
+# ---------------------------------------------------------------------------
+# Problem 3A: a Bayes net that defeats rejection sampling.
+# Conditions 1-4 are checked exactly (enumerating at most 2^10 joint
+# assignments); condition 5 (P(e) <= 0.005) is checked empirically with the
+# grader's own forward sampler. With N = 8000 and a cutoff of 80 accepts
+# (2x the expected 40 accepts at P(e) = 0.005), a net with P(e) <= 0.005 fails
+# with probability < 1e-8, and one with P(e) >= 0.02 passes with prob. < 1e-11.
+# ---------------------------------------------------------------------------
+_RS_MAX_VARS = 10
+_RS_CPT_MIN, _RS_CPT_MAX = 0.05, 0.95
+_RS_MAX_EVIDENCE = 3
+_RS_MIN_MARGINAL = 0.5
+_RS_NUM_SAMPLES = 8000
+_RS_MAX_ACCEPTS = 80
+_RS_SEED = 9
+_RS_TOL = 1e-9
+
+
+def _rs_check_net(cpts):
+    """Validate a list of CPTs (parents first, child last) over binary RVs.
+
+    Returns (names, parents, tables): names in a topological order, a dict
+    from name to list of parent names, and a dict from name to a float array
+    of shape (2,) * (num_parents + 1) indexed [parent values..., child value].
+    """
+    assert isinstance(cpts, (list, tuple)), "cpts must be a list of CPTs."
+    assert 1 <= len(cpts) <= _RS_MAX_VARS, \
+        f"Your net has {len(cpts)} variables; it must have between 1 and {_RS_MAX_VARS}."
+
+    parents, tables, given_order = {}, {}, []
+    for cpt in cpts:
+        rvs = list(cpt.rvs)
+        assert len(rvs) >= 1, "Every CPT must contain at least one RV."
+        for rv in rvs:
+            assert list(rv.domain) == [0, 1], \
+                f"Variable {rv.name} has domain {rv.domain}; every variable must have domain [0, 1]."
+        names = [rv.name for rv in rvs]
+        child = names[-1]
+        assert len(set(names)) == len(names), f"The CPT for {child} lists a variable more than once."
+        assert child not in tables, f"Variable {child} is the last (child) variable of more than one CPT."
+        table = np.asarray(cpt.table, dtype=np.float64)
+        assert table.shape == (2,) * len(rvs), \
+            f"The CPT for {child} has table shape {table.shape}; expected {(2,) * len(rvs)}."
+        assert np.all(np.isfinite(table)), f"The CPT for {child} contains non-finite entries."
+        assert table.min() >= _RS_CPT_MIN - _RS_TOL and table.max() <= _RS_CPT_MAX + _RS_TOL, (
+            f"The CPT for {child} has entries in [{table.min():.4g}, {table.max():.4g}]; "
+            f"every entry must be in [{_RS_CPT_MIN}, {_RS_CPT_MAX}].")
+        assert np.allclose(table.sum(axis=-1), 1.0, atol=1e-6), (
+            f"The CPT for {child} does not sum to 1 over its last axis. Remember to list "
+            "the parents first and the variable itself last.")
+        parents[child] = names[:-1]
+        tables[child] = table
+        given_order.append(child)
+
+    for child, pas in parents.items():
+        for pa in pas:
+            assert pa in tables, \
+                f"{pa} is a parent of {child} but has no CPT of its own (no CPT lists it last)."
+
+    # Kahn's algorithm, breaking ties by the order the CPTs were given in.
+    order, placed = [], set()
+    while len(order) < len(given_order):
+        ready = [x for x in given_order if x not in placed and all(p in placed for p in parents[x])]
+        assert ready, "Your net has a directed cycle."
+        order.append(ready[0])
+        placed.add(ready[0])
+    return order, parents, tables
+
+
+def _rs_check_evidence(evidence, names):
+    assert isinstance(evidence, dict), "evidence must be a dict from variable names to values."
+    assert 1 <= len(evidence) <= _RS_MAX_EVIDENCE, \
+        f"Your evidence assigns {len(evidence)} variables; it must assign between 1 and {_RS_MAX_EVIDENCE}."
+    clean = {}
+    for name, value in evidence.items():
+        assert name in names, f"Evidence variable {name!r} is not a variable in your net."
+        assert value in (0, 1), f"Evidence value for {name} is {value!r}; it must be 0 or 1."
+        clean[name] = int(value)
+    return clean
+
+
+def _rs_joint(order, parents, tables):
+    """Exact joint as an array with one binary axis per variable in `order`."""
+    operands = []
+    for x in order:
+        operands.append(tables[x])
+        operands.append([order.index(v) for v in parents[x] + [x]])
+    return np.einsum(*operands, list(range(len(order))))
+
+
+def _rs_forward_sample(order, parents, tables, num_samples, seed):
+    """Forward-sample the net. Returns an int array of shape (num_samples, len(order))."""
+    rng = np.random.default_rng(seed)
+    col = {x: i for i, x in enumerate(order)}
+    samples = np.zeros((num_samples, len(order)), dtype=np.int64)
+    for x in order:
+        index = tuple(samples[:, col[p]] for p in parents[x]) + (1,)
+        p_one = tables[x][index]
+        samples[:, col[x]] = (rng.random(num_samples) < p_one).astype(np.int64)
+    return samples
+
+
 class TestPSet9(unittest.TestCase):
     def __init__(self, test_name, notebook_locals):
         super().__init__(test_name)
@@ -212,8 +315,48 @@ class TestPSet9(unittest.TestCase):
         test_ok()
         
     @weight(5)
+    def test_12_rejection_adversary(self):
+        rejection_sampling_adversary = get_locals(
+            self.notebook_locals, ["rejection_sampling_adversary"])
+        result = rejection_sampling_adversary()
+        assert isinstance(result, tuple) and len(result) == 2, \
+            "rejection_sampling_adversary() must return a tuple (cpts, evidence)."
+        cpts, evidence = result
+
+        # Conditions 1-3.
+        order, parents, tables = _rs_check_net(cpts)
+        evidence = _rs_check_evidence(evidence, order)
+
+        # Condition 4, exactly.
+        joint = _rs_joint(order, parents, tables)
+        for name, value in evidence.items():
+            axis = order.index(name)
+            other_axes = tuple(i for i in range(len(order)) if i != axis)
+            marginal = joint.sum(axis=other_axes)[value]
+            assert marginal >= _RS_MIN_MARGINAL - _RS_TOL, (
+                f"P({name} = {value}) = {marginal:.4f}, but every evidence value must have "
+                f"probability at least {_RS_MIN_MARGINAL} on its own.")
+
+        # Condition 5, empirically: rejection sampling with the grader's own sampler.
+        samples = _rs_forward_sample(order, parents, tables, _RS_NUM_SAMPLES, _RS_SEED)
+        ev_cols = [order.index(name) for name in evidence]
+        ev_vals = np.array([evidence[name] for name in evidence])
+        accepted = np.all(samples[:, ev_cols] == ev_vals, axis=1)
+        num_accepted = int(accepted.sum())
+
+        print(f"Rejection sampling with evidence {evidence}: accepted {num_accepted} / {_RS_NUM_SAMPLES} samples "
+              f"(empirical acceptance rate {num_accepted / _RS_NUM_SAMPLES:.4f}); "
+              f"passing requires at most {_RS_MAX_ACCEPTS}.")
+
+        assert num_accepted <= _RS_MAX_ACCEPTS, (
+            f"Rejection sampling accepted {num_accepted} of {_RS_NUM_SAMPLES} samples; "
+            f"at most {_RS_MAX_ACCEPTS} are allowed. Make the evidence jointly less likely.")
+
+        test_ok()
+
+    @weight(5)
     @timeout_decorator.timeout(1.0)
-    def test_12_form_word(self):
+    def test_13_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Uran".lower()) #to change!!
         if hash(word.strip().lower()) == password_hash:
