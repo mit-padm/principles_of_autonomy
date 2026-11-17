@@ -204,7 +204,7 @@ class TestPSet9(unittest.TestCase):
 
         test_ok()
 
-    @weight(10)
+    @weight(5)
     def test_08(self):
         create_state_variable, create_transition_cpt, CPT = \
             get_locals(self.notebook_locals, ["create_state_variable",
@@ -245,7 +245,7 @@ class TestPSet9(unittest.TestCase):
 
         test_ok()
 
-    @weight(25)
+    @weight(20)
     def test_10(self):
         create_state_variable, RV, create_observation_variable, \
         create_observation_cpt = \
@@ -273,7 +273,7 @@ class TestPSet9(unittest.TestCase):
         test_ok()
 
                 
-    @weight(25)
+    @weight(20)
     def test_11(self):
         create_hmm, run_viterbi = get_locals(self.notebook_locals,
                                              ["create_hmm", "run_viterbi"])
@@ -314,7 +314,7 @@ class TestPSet9(unittest.TestCase):
 
         test_ok()
         
-    @weight(5)
+    @weight(7)
     def test_12_rejection_adversary(self):
         rejection_sampling_adversary = get_locals(
             self.notebook_locals, ["rejection_sampling_adversary"])
