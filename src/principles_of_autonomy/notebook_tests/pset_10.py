@@ -3,6 +3,8 @@ import torch
 import timeout_decorator
 import numpy as np
 import re
+import json
+import hashlib
 from gradescope_utils.autograder_utils.decorators import weight
 from collections import defaultdict
 
@@ -19,6 +21,73 @@ def replace_punctuation(text):
 def clean_data(messages):
     cleaned_messages = [replace_punctuation(msg).lower() for msg in messages]
     return cleaned_messages
+
+# ---------------------------------------------------------------------------
+# Problem 4: grading the LLM-written Naive Bayes classifier.
+# The grader re-parses and re-scores the pasted file itself, so it does not rely on utils.py.
+# ---------------------------------------------------------------------------
+_LLM_MAX_WORDS = 200
+_LLM_WORD_PATTERN = re.compile(r'[a-z0-9]+')
+_LLM_SPAM_WEIGHT, _LLM_HAM_WEIGHT = 1/3, 2/3
+# Weighted accuracy of the Problem 1 classifier (k = 1) on the Problem 4 split (0.8371...).
+_LLM_PASS_BAR = 0.837
+# SHA-256 of json.dumps([labels, messages]) for the cleaned, unshuffled Problem 4 split of SMS_data.
+_LLM_TRAIN_SHA256 = "d1f8b9f012053a9078333f9272dc7ea127ad8a34455256c28cfd170fb17574e5"
+_LLM_TEST_SHA256 = "cd40e6986eff5ebd213be3b2e9c57f11856e4dd71be5cfd492ed84f5e3886553"
+
+
+def _llm_split_hash(labels, messages):
+    return hashlib.sha256(json.dumps([list(labels), list(messages)]).encode()).hexdigest()
+
+
+def _llm_parse(text, vocabulary):
+    """Returns (prior, (unseen_spam, unseen_ham), {word: (p_spam, p_ham)}); raises AssertionError on any rule violation."""
+    prior, unseen, words = None, None, {}
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith('#') or line.startswith('```'):
+            continue
+        key, *values = line.split()
+        expected = 1 if key == 'prior' else 2
+        assert len(values) == expected, f"line {line_number}: expected {expected} number(s) after {key!r}, found {len(values)}"
+        try:
+            probabilities = [float(v) for v in values]
+        except ValueError:
+            raise AssertionError(f"line {line_number}: could not read {' '.join(values)!r} as numbers")
+        assert all(0 < p < 1 for p in probabilities), f"line {line_number}: every probability must be strictly between 0 and 1"
+        if key == 'prior':
+            assert prior is None, f"line {line_number}: 'prior' appears more than once"
+            prior = probabilities[0]
+        elif key == 'unseen':
+            assert unseen is None, f"line {line_number}: 'unseen' appears more than once"
+            unseen = tuple(probabilities)
+        else:
+            assert _LLM_WORD_PATTERN.fullmatch(key), f"line {line_number}: {key!r} is not a word of lowercase letters and digits"
+            assert key in vocabulary, f"line {line_number}: {key!r} does not appear in the training data"
+            assert key not in words, f"line {line_number}: {key!r} appears more than once"
+            words[key] = tuple(probabilities)
+    assert prior is not None, "the classifier file is missing a 'prior' line"
+    assert unseen is not None, "the classifier file is missing an 'unseen' line"
+    assert len(words) <= _LLM_MAX_WORDS, f"the classifier file has {len(words)} word lines; at most {_LLM_MAX_WORDS} are allowed"
+    return prior, unseen, words
+
+
+def _llm_classify(message, prior, unseen, words):
+    """Same MAP rule as classify_message in 1C, with unlisted words using the 'unseen' probabilities."""
+    log_spam, log_ham = np.log(prior), np.log(1 - prior)
+    for word in message.split():
+        p_spam, p_ham = words.get(word, unseen)
+        log_spam += np.log(p_spam)
+        log_ham += np.log(p_ham)
+    return "spam" if log_spam > log_ham else "ham"
+
+
+def _llm_weighted_accuracy(labels, predictions):
+    labels, predictions = np.array(labels), np.array(predictions)
+    spam_recall = np.mean(predictions[labels == "spam"] == "spam")
+    ham_recall = np.mean(predictions[labels == "ham"] == "ham")
+    return _LLM_SPAM_WEIGHT * spam_recall + _LLM_HAM_WEIGHT * ham_recall
+
 
 # Function for tests
 def test_ok():
@@ -443,9 +512,28 @@ class TestPSet10(unittest.TestCase):
                 assert student_ans_for_q[part] == part_ans
         test_ok()
 
+    @weight(10)
+    def test_11_llm_classifier(self):
+        text, train_labels, train_messages, test_labels, test_messages = get_locals(
+            self.notebook_locals,
+            ["llm_classifier_text", "llm_training_labels", "llm_training_messages", "llm_test_labels", "llm_test_messages"])
+        assert isinstance(text, str), "llm_classifier_text should be a string containing the LLM's classifier file"
+        assert _llm_split_hash(train_labels, train_messages) == _LLM_TRAIN_SHA256, \
+            "llm_training_labels / llm_training_messages do not match the Problem 4 training set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
+        assert _llm_split_hash(test_labels, test_messages) == _LLM_TEST_SHA256, \
+            "llm_test_labels / llm_test_messages do not match the Problem 4 test set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
+
+        vocabulary = {w for message in train_messages for w in message.split()}
+        prior, unseen, words = _llm_parse(text, vocabulary)
+        predictions = [_llm_classify(message, prior, unseen, words) for message in test_messages]
+        score = _llm_weighted_accuracy(test_labels, predictions)
+        assert score >= _LLM_PASS_BAR, \
+            f"Weighted accuracy on the test set is {score:.3f}; passing requires at least {_LLM_PASS_BAR}."
+        test_ok()
+
     @weight(5)
     @ timeout_decorator.timeout(1.0)
-    def test_11(self):
+    def test_12_form_word(self):
         word = get_locals(self.notebook_locals, ['form_confirmation_word'])
         password_hash = hash("Sock".lower())
         if hash(word.strip().lower()) == password_hash:
