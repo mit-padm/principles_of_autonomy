@@ -23,15 +23,15 @@ def clean_data(messages):
     return cleaned_messages
 
 # ---------------------------------------------------------------------------
-# Problem 4: grading the LLM-written Naive Bayes classifier.
+# Problem 3: grading the LLM-written Naive Bayes classifier.
 # The grader re-parses and re-scores the pasted file itself, so it does not rely on utils.py.
 # ---------------------------------------------------------------------------
 _LLM_MAX_WORDS = 200
 _LLM_WORD_PATTERN = re.compile(r'[a-z0-9]+')
 _LLM_SPAM_WEIGHT, _LLM_HAM_WEIGHT = 1/3, 2/3
-# Weighted accuracy of the Problem 1 classifier (k = 1) on the Problem 4 split (0.8371...).
+# Weighted accuracy of the Problem 1 classifier (k = 1) on the Problem 3 split (0.8371...).
 _LLM_PASS_BAR = 0.837
-# SHA-256 of json.dumps([labels, messages]) for the cleaned, unshuffled Problem 4 split of SMS_data.
+# SHA-256 of json.dumps([labels, messages]) for the cleaned, unshuffled Problem 3 split of SMS_data.
 _LLM_TRAIN_SHA256 = "d1f8b9f012053a9078333f9272dc7ea127ad8a34455256c28cfd170fb17574e5"
 _LLM_TEST_SHA256 = "cd40e6986eff5ebd213be3b2e9c57f11856e4dd71be5cfd492ed84f5e3886553"
 
@@ -436,8 +436,27 @@ class TestPSet10(unittest.TestCase):
         assert np.allclose(ans, out, atol=1e-4), "Batch gradient descent implementation is incorrect"
         test_ok()
 
+    @weight(10)
+    def test_07_llm_classifier(self):
+        text, train_labels, train_messages, test_labels, test_messages = get_locals(
+            self.notebook_locals,
+            ["llm_classifier_text", "llm_training_labels", "llm_training_messages", "llm_test_labels", "llm_test_messages"])
+        assert isinstance(text, str), "llm_classifier_text should be a string containing the LLM's classifier file"
+        assert _llm_split_hash(train_labels, train_messages) == _LLM_TRAIN_SHA256, \
+            "llm_training_labels / llm_training_messages do not match the Problem 3 training set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
+        assert _llm_split_hash(test_labels, test_messages) == _LLM_TEST_SHA256, \
+            "llm_test_labels / llm_test_messages do not match the Problem 3 test set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
+
+        vocabulary = {w for message in train_messages for w in message.split()}
+        prior, unseen, words = _llm_parse(text, vocabulary)
+        predictions = [_llm_classify(message, prior, unseen, words) for message in test_messages]
+        score = _llm_weighted_accuracy(test_labels, predictions)
+        assert score >= _LLM_PASS_BAR, \
+            f"Weighted accuracy on the test set is {score:.3f}; passing requires at least {_LLM_PASS_BAR}."
+        test_ok()
+
     @weight(0)
-    def test_07_NN(self):
+    def test_08_NN(self):
         SimpleNN = get_locals(self.notebook_locals, ["SimpleNN"])
         inp = (12, 7, 43, 18)
         nn = SimpleNN(
@@ -454,14 +473,14 @@ class TestPSet10(unittest.TestCase):
         test_ok()
 
     @weight(0)
-    def test_08_NN_multiple(self):
+    def test_09_NN_multiple(self):
         ans = ('a', 'b')
         mc_answer_set_1 = get_locals(self.notebook_locals, ["mc_answer_set_1"])
         assert compare_iterators(ans, mc_answer_set_1)
         test_ok()
 
     @weight(0)
-    def test_09_overfit(self):
+    def test_10_overfit(self):
         early_stopping = get_locals(self.notebook_locals, ["early_stopping"])
 
         # test best_val_update loss and counter work
@@ -497,7 +516,7 @@ class TestPSet10(unittest.TestCase):
         test_ok()
 
     @weight(0)
-    def test_10_overfit_choice(self):
+    def test_11_overfit_choice(self):
         ans = dict(
             q1=dict(a=True, b=True, c=False),
             q2=dict(a=True, b=False, c=False),
@@ -510,25 +529,6 @@ class TestPSet10(unittest.TestCase):
             student_ans_for_q = mc_answer_set_2[k]
             for part, part_ans in v.items():
                 assert student_ans_for_q[part] == part_ans
-        test_ok()
-
-    @weight(10)
-    def test_11_llm_classifier(self):
-        text, train_labels, train_messages, test_labels, test_messages = get_locals(
-            self.notebook_locals,
-            ["llm_classifier_text", "llm_training_labels", "llm_training_messages", "llm_test_labels", "llm_test_messages"])
-        assert isinstance(text, str), "llm_classifier_text should be a string containing the LLM's classifier file"
-        assert _llm_split_hash(train_labels, train_messages) == _LLM_TRAIN_SHA256, \
-            "llm_training_labels / llm_training_messages do not match the Problem 4 training set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
-        assert _llm_split_hash(test_labels, test_messages) == _LLM_TEST_SHA256, \
-            "llm_test_labels / llm_test_messages do not match the Problem 4 test set. Do not modify SMS_data, SMS_llm_train, utils.py, or the cell that loads them."
-
-        vocabulary = {w for message in train_messages for w in message.split()}
-        prior, unseen, words = _llm_parse(text, vocabulary)
-        predictions = [_llm_classify(message, prior, unseen, words) for message in test_messages]
-        score = _llm_weighted_accuracy(test_labels, predictions)
-        assert score >= _LLM_PASS_BAR, \
-            f"Weighted accuracy on the test set is {score:.3f}; passing requires at least {_LLM_PASS_BAR}."
         test_ok()
 
     @weight(5)
