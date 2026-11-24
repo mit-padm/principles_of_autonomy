@@ -209,7 +209,7 @@ class TestPSet10(unittest.TestCase):
         assert np.isclose(six_word_value, log_probs['to'])
         test_ok()
 
-    @weight(10)
+    @weight(5)
     def test_03_learn_distributions(self):
         disgruntled_sms_messages = clean_data([
             "Why do companies keep trusting machines to make decisions about people?",
@@ -404,7 +404,7 @@ class TestPSet10(unittest.TestCase):
             student_ans, ans, atol=1e-4), "Calculated weights are incorrect"
         test_ok()
 
-    @weight(10)
+    @weight(5)
     def test_06_batch_gd(self):
         batch_gradient_descent = get_locals(
             self.notebook_locals, ["batch_gradient_descent"])
@@ -436,7 +436,7 @@ class TestPSet10(unittest.TestCase):
         assert np.allclose(ans, out, atol=1e-4), "Batch gradient descent implementation is incorrect"
         test_ok()
 
-    @weight(10)
+    @weight(5)
     def test_07_llm_classifier(self):
         text, train_labels, train_messages, test_labels, test_messages = get_locals(
             self.notebook_locals,
